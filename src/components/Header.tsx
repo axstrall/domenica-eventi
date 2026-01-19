@@ -5,8 +5,8 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navigation = [
-    { name: 'Home', href: '#' },
-    { name: 'Catalogo', href: '#catalogo' },
+    { name: 'Home', href: '/' },
+    { name: 'Catalogo', href: '/catalog' },
   ];
 
   return (
@@ -14,17 +14,16 @@ export default function Header() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Top">
         <div className="w-full py-4 flex items-center justify-between border-b border-rose-100 lg:border-none">
           <div className="flex items-center">
-            <a href="#" className="flex items-center gap-2 sm:gap-3">
+            <a href="/" className="flex items-center gap-2 sm:gap-3">
               <img
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-rose-200"
                 src="/images/logo.png"
                 alt="Domenica Miserandino Logo"
               />
-              {/* Rimosso 'hidden' così appare anche su mobile */}
               <div className="leading-tight">
                 <span className="text-base sm:text-xl font-bold text-gray-900 block uppercase">EVENTI</span>
                 <span className="text-[10px] sm:text-xs tracking-widest text-rose-500 font-medium uppercase">
-                  Miserandino
+                  di Domenica Miserandino
                 </span>
               </div>
             </a>
@@ -45,7 +44,7 @@ export default function Header() {
             </a>
           </div>
 
-          {/* Mobile Menu Button - Sempre visibile su mobile */}
+          {/* Mobile Menu Button - Appare solo su telefono */}
           <div className="md:hidden">
             <button
               type="button"
