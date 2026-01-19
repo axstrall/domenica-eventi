@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Header } from '../components/Header';
+// Corretto: rimosse le graffe per permettere l'importazione corretta di Header
+import Header from '../components/Header';
 import { Hero } from '../components/Hero';
 import { ProductGrid } from '../components/ProductGrid';
 import { QuoteModal } from '../components/QuoteModal';
 import { Footer } from '../components/Footer';
-import { Testimonials } from '../components/Testimonials'; // <--- IMPORTATO
+import { Testimonials } from '../components/Testimonials';
 import { supabase } from '../lib/supabase';
 import type { Product, Category } from '../lib/database.types';
 
@@ -109,9 +110,7 @@ export function HomePage() {
         ) : null}
       </main>
 
-      {/* --- AGGIUNTA SEZIONE RECENSIONI --- */}
       <Testimonials />
-
       <Footer />
 
       <QuoteModal
