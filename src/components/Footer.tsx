@@ -55,7 +55,7 @@ export function Footer() {
                 <MessageCircle className="h-5 w-5" />
               </a>
               <a 
-                href="https://www.instagram.com/eventi_di_domenica_miserantino/" 
+                href="https://www.instagram.com/eventi_di_domenica_miserandino/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="bg-white p-2 rounded-full shadow-sm text-rose-400 hover:bg-rose-400 hover:text-white transition-all duration-300 hover:shadow-[0_0_10px_rgba(251,113,133,0.3)]"
@@ -96,7 +96,7 @@ export function Footer() {
         {/* --- SEZIONE COPYRIGHT E FIRMA AXS LAB --- */}
         <div className="border-t border-rose-200 mt-12 pt-8 text-center">
           <p className="text-rose-400 text-[10px] uppercase tracking-widest mb-2">
-            © {new Date().getFullYear()} Eventi di Domenica Miserantino. Tutti i diritti riservati.
+            © {new Date().getFullYear()} Eventi di Domenica Miserandino. Tutti i diritti riservati.
           </p>
           <div className="flex items-center justify-center gap-2 text-gray-400 text-[9px] uppercase tracking-[0.3em]">
             <span>Designed & Developed by</span>

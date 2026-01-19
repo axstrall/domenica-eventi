@@ -22,7 +22,7 @@ export function Header() {
               Eventi
             </span>
             <span className="text-[10px] text-rose-400 uppercase tracking-[0.2em] font-medium italic">
-              di Domenica Miserantino
+              di Domenica Miserandino
             </span>
           </div>
         </Link>
