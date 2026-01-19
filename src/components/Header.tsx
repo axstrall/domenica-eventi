@@ -12,19 +12,19 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Top">
-        <div className="w-full py-6 flex items-center justify-between border-b border-rose-100 lg:border-none">
+        <div className="w-full py-4 flex items-center justify-between border-b border-rose-100 lg:border-none">
           <div className="flex items-center">
-            <a href="#" className="flex items-center gap-3">
+            <a href="#" className="flex items-center gap-2 sm:gap-3">
               <img
-                className="h-12 w-12 rounded-full object-cover border-2 border-rose-200"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-rose-200"
                 src="/images/logo.png"
                 alt="Domenica Miserandino Logo"
               />
-              {/* Il nome scompare su mobile (hidden) e riappare su schermi medi (md:block) */}
-              <div className="hidden md:block leading-tight">
-                <span className="text-xl font-bold text-gray-900 block">EVENTI</span>
-                <span className="text-xs tracking-widest text-rose-500 font-medium uppercase">
-                  di Domenica Miserandino
+              {/* Rimosso 'hidden' così appare anche su mobile */}
+              <div className="leading-tight">
+                <span className="text-base sm:text-xl font-bold text-gray-900 block uppercase">EVENTI</span>
+                <span className="text-[10px] sm:text-xs tracking-widest text-rose-500 font-medium uppercase">
+                  Miserandino
                 </span>
               </div>
             </a>
@@ -45,11 +45,11 @@ export default function Header() {
             </a>
           </div>
 
-          {/* Mobile Menu Button (appare solo su telefono) */}
+          {/* Mobile Menu Button - Sempre visibile su mobile */}
           <div className="md:hidden">
             <button
               type="button"
-              className="p-2 text-gray-600 hover:text-rose-500"
+              className="p-2 text-gray-600 hover:text-rose-500 transition-colors"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X size={28} /> : <Menu size={28} />}
@@ -57,9 +57,9 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer (il menu che esce fuori) */}
+        {/* Mobile Navigation Drawer */}
         {isOpen && (
-          <div className="md:hidden py-4 space-y-2 border-t border-rose-50 border-b pb-6">
+          <div className="md:hidden py-4 space-y-2 border-t border-rose-50 bg-white">
             {navigation.map((link) => (
               <a
                 key={link.name}
@@ -72,7 +72,7 @@ export default function Header() {
             ))}
             <a
               href="https://wa.me/393270119643"
-              className="flex items-center justify-center w-full mt-4 px-4 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-rose-500"
+              className="flex items-center justify-center w-full mt-4 px-4 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-rose-500 shadow-md"
             >
               <Send size={18} className="mr-2" />
               Richiedi Preventivo
