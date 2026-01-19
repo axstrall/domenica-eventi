@@ -1,52 +1,85 @@
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Menu, X, Send } from 'lucide-react';
 
-export function Header() {
+export default function Header() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const navigation = [
+    { name: 'Home', href: '#' },
+    { name: 'Catalogo', href: '#catalogo' },
+  ];
+
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        
-        {/* Logo a Sinistra con Testo Doppia Riga */}
-        <Link to="/" className="flex items-center group">
-          {/* Cerchio del Logo */}
-          <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-rose-200 shadow-sm transition-all duration-300 group-hover:border-rose-400 group-hover:shadow-[0_0_15px_rgba(251,113,133,0.4)] bg-white">
-            <img 
-              src="/LogoDomenica.png" 
-              alt="Logo Domenica" 
-              className="h-full w-full object-cover scale-125 transition-transform duration-500 group-hover:scale-140" 
-            />
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Top">
+        <div className="w-full py-6 flex items-center justify-between border-b border-rose-100 lg:border-none">
+          <div className="flex items-center">
+            <a href="#" className="flex items-center gap-3">
+              <img
+                className="h-12 w-12 rounded-full object-cover border-2 border-rose-200"
+                src="/images/logo.png"
+                alt="Domenica Miserandino Logo"
+              />
+              {/* Il nome scompare su mobile (hidden) e riappare su schermi medi (md:block) */}
+              <div className="hidden md:block leading-tight">
+                <span className="text-xl font-bold text-gray-900 block">EVENTI</span>
+                <span className="text-xs tracking-widest text-rose-500 font-medium uppercase">
+                  di Domenica Miserandino
+                </span>
+              </div>
+            </a>
           </div>
 
-          {/* Testo a due righe */}
-          <div className="flex flex-col ml-3 leading-tight hidden sm:flex">
-            <span className="font-serif text-2xl text-gray-800 font-bold tracking-tight group-hover:text-rose-500 transition-colors uppercase">
-              Eventi
-            </span>
-            <span className="text-[10px] text-rose-400 uppercase tracking-[0.2em] font-medium italic">
-              di Domenica Miserandino
-            </span>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex ml-10 space-x-8 items-center">
+            {navigation.map((link) => (
+              <a key={link.name} href={link.href} className="text-base font-medium text-gray-700 hover:text-rose-600 transition-colors">
+                {link.name}
+              </a>
+            ))}
+            <a
+              href="https://wa.me/393270119643"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-rose-500 hover:bg-rose-600 shadow-sm transition-all hover:scale-105"
+            >
+              Richiedi Preventivo
+            </a>
           </div>
-        </Link>
 
-        {/* Menu a Destra */}
-        <nav className="hidden md:flex items-center space-x-10">
-          <Link to="/" className="text-gray-600 hover:text-rose-400 font-medium transition-colors">
-            Home
-          </Link>
-          
-          <Link to="/catalog" className="text-gray-600 hover:text-rose-400 font-medium transition-colors">
-            Catalogo
-          </Link>
-          
-          <a 
-            href="https://wa.me/393336980879?text=Salve!%20Vorrei%20ricevere%20informazioni%20e%20un%20preventivo%20per%20un%20articolo." 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="bg-rose-400 text-white px-8 py-2.5 rounded-full font-medium hover:bg-rose-500 transition-all shadow-md shadow-rose-100 hover:shadow-rose-300 hover:-translate-y-0.5 text-center"
-          >
-            Richiedi Preventivo
-          </a>
-        </nav>
-      </div>
+          {/* Mobile Menu Button (appare solo su telefono) */}
+          <div className="md:hidden">
+            <button
+              type="button"
+              className="p-2 text-gray-600 hover:text-rose-500"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {isOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Drawer (il menu che esce fuori) */}
+        {isOpen && (
+          <div className="md:hidden py-4 space-y-2 border-t border-rose-50 border-b pb-6">
+            {navigation.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="block text-base font-medium text-gray-700 hover:text-rose-600 px-2 py-2"
+              >
+                {link.name}
+              </a>
+            ))}
+            <a
+              href="https://wa.me/393270119643"
+              className="flex items-center justify-center w-full mt-4 px-4 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-rose-500"
+            >
+              <Send size={18} className="mr-2" />
+              Richiedi Preventivo
+            </a>
+          </div>
+        )}
+      </nav>
     </header>
   );
 }
