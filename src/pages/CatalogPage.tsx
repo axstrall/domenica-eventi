@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Header } from '../components/Header';
+import   Header  from '../components/Header';
 import { ProductGrid } from '../components/ProductGrid';
 import { QuoteModal } from '../components/QuoteModal';
 import { Footer } from '../components/Footer';
