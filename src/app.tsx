@@ -9,9 +9,9 @@ function App() {
       <div 
         className="min-h-screen"
         style={{
-          backgroundImage: "url('/sfondo-fiori.webp')",
+          backgroundImage: "url('/fiori.webp')", 
           backgroundRepeat: "repeat",
-          backgroundSize: "400px", // Regola la grandezza dei fiori qui
+          backgroundSize: "400px", 
           backgroundAttachment: "fixed"
         }}
       >
