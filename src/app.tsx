@@ -10,9 +10,10 @@ function App() {
         className="min-h-screen"
         style={{
           backgroundImage: "url('/fiori.webp')", 
-          backgroundRepeat: "repeat",
-          backgroundSize: "400px", 
-          backgroundAttachment: "fixed"
+          backgroundRepeat: "no-repeat",   /* CAMBIATO: non si ripete più a mosaico */
+          backgroundSize: "cover",        /* CAMBIATO: copre tutto lo schermo uniformemente */
+          backgroundPosition: "center",   /* CAMBIATO: centra l'immagine */
+          backgroundAttachment: "fixed"   /* L'immagine resta ferma mentre scorri */
         }}
       >
         <Routes>
