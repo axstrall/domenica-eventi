@@ -6,14 +6,13 @@ import { CatalogPage } from './pages/CatalogPage';
 function App() {
   return (
     <Router>
-      {/* Questo div avvolge tutto il sito e applica l'immagine di sfondo */}
       <div 
         className="min-h-screen"
         style={{
-          backgroundImage: "url('/bg-pattern.jpg')", // Nome della tua foto in public
-          backgroundRepeat: "repeat",               // L'immagine si ripete come una trama
-          backgroundSize: "auto",                   // Mantiene la dimensione originale della trama
-          backgroundAttachment: "fixed"             // Lo sfondo resta fermo mentre scorri
+          backgroundImage: "url('/sfondo-fiori.webp')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "400px", // Regola la grandezza dei fiori qui
+          backgroundAttachment: "fixed"
         }}
       >
         <Routes>
