@@ -9,14 +9,14 @@ function App() {
       <div 
         className="min-h-screen"
         style={{
+          /* Colore di base identico allo sfondo dell'immagine per nascondere i tagli */
+          backgroundColor: "#e0f2f1", 
           backgroundImage: "url('/fiori.webp')", 
-          /* Torniamo al repeat per mantenere la nitidezza originale dei fiori */
+          /* Manteniamo repeat ma regoliamo la grandezza per ridurre l'effetto 'taglio' */
           backgroundRepeat: "repeat",
-          /* Usiamo una dimensione fissa media per evitare l'effetto "pixelato" */
-          backgroundSize: "500px", 
+          backgroundSize: "550px", 
           backgroundAttachment: "fixed",
-          /* Aggiungiamo un colore di fondo simile per ammorbidire le giunture */
-          backgroundColor: "#e0f2f1" 
+          backgroundPosition: "top left"
         }}
       >
         <Routes>
