@@ -10,10 +10,13 @@ function App() {
         className="min-h-screen"
         style={{
           backgroundImage: "url('/fiori.webp')", 
-          backgroundRepeat: "no-repeat",   /* CAMBIATO: non si ripete più a mosaico */
-          backgroundSize: "cover",        /* CAMBIATO: copre tutto lo schermo uniformemente */
-          backgroundPosition: "center",   /* CAMBIATO: centra l'immagine */
-          backgroundAttachment: "fixed"   /* L'immagine resta ferma mentre scorri */
+          /* Torniamo al repeat per mantenere la nitidezza originale dei fiori */
+          backgroundRepeat: "repeat",
+          /* Usiamo una dimensione fissa media per evitare l'effetto "pixelato" */
+          backgroundSize: "500px", 
+          backgroundAttachment: "fixed",
+          /* Aggiungiamo un colore di fondo simile per ammorbidire le giunture */
+          backgroundColor: "#e0f2f1" 
         }}
       >
         <Routes>
