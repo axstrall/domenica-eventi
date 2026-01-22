@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom';
 
 export function Hero() {
   return (
-    /* Aggiunta la sfumatura rosa che parte dall'alto */
-    <div className="relative bg-gradient-to-b from-rose-50 to-white py-16 px-4 sm:px-6 lg:py-24 lg:px-8">
+    /* CAMBIATO: bg-transparent per mostrare lo sfondo del sito */
+    <div className="relative bg-transparent py-16 px-4 sm:px-6 lg:py-24 lg:px-8">
       <div className="relative max-w-7xl mx-auto text-center">
-        {/* Titolo semplice ed elegante come l'originale */}
         <h1 className="text-4xl font-serif text-slate-800 sm:text-6xl tracking-tight">
           Sfoglia il nostro catalogo
         </h1>
