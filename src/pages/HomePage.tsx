@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// Corretto: rimosse le graffe per permettere l'importazione corretta di Header
 import Header from '../components/Header';
 import { Hero } from '../components/Hero';
 import { ProductGrid } from '../components/ProductGrid';
@@ -49,7 +48,8 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    /* CAMBIATO: bg-transparent per far vedere i fiori di App.tsx */
+    <div className="min-h-screen bg-transparent">
       <Header categories={categories} />
       <Hero />
 
