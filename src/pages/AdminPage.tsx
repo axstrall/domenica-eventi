@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Loader2, Trash2, Edit2, Check, X, Star } from 'lucide-react';
+import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Loader2, Trash2, Edit2, Check, X, Star, Search, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function AdminPage() {
@@ -12,6 +12,11 @@ export function AdminPage() {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Stati per Ricerca e Filtri
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Stati per la modifica
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', brand: '', price: '' });
 
@@ -27,7 +32,7 @@ export function AdminPage() {
       const [subs, cats, prods] = await Promise.all([
         supabase.from('whatsapp_subscribers').select('*').order('created_at', { ascending: false }),
         supabase.from('categories').select('*').order('name'),
-        supabase.from('products').select('*').order('created_at', { ascending: false })
+        supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false })
       ]);
       if (subs.data) setSubscribers(subs.data);
       if (cats.data) setCategories(cats.data);
@@ -37,6 +42,14 @@ export function AdminPage() {
   };
 
   useEffect(() => { if (isAuthenticated) loadData(); }, [isAuthenticated]);
+
+  // Logica di filtraggio prodotti
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = selectedCategory === 'all' || p.category_id === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,7 +140,7 @@ export function AdminPage() {
             <input type="text" placeholder="Marchio" className="border p-4 rounded-2xl outline-none" value={newProduct.brand} onChange={e => setNewProduct({...newProduct, brand: e.target.value})} required />
             <input type="text" placeholder="Prezzo" className="border p-4 rounded-2xl outline-none" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
             <select className="border p-4 rounded-2xl outline-none" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
-              <option value="">Categoria...</option>
+              <option value="">Scegli Categoria...</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -139,40 +152,77 @@ export function AdminPage() {
         </form>
       </section>
 
-      {/* GESTIONE PRODOTTI ESISTENTI */}
+      {/* GESTIONE PRODOTTI ESISTENTI CON RICERCA */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
-        <h2 className="text-2xl font-serif italic mb-6">Gestione Catalogo</h2>
-        <div className="grid gap-4">
-          {products.map(p => (
-            <div key={p.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-gray-50 rounded-[2rem] border border-gray-100 gap-4">
-              <div className="flex items-center gap-5">
-                <img src={p.image_url} className="w-16 h-16 rounded-xl object-cover shadow-sm" />
-                {editingId === p.id ? (
-                  <div className="flex flex-col gap-2">
-                    <input type="text" className="border px-3 py-1 rounded-lg text-sm" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-                    <input type="text" className="border px-3 py-1 rounded-lg text-sm" value={editForm.brand} onChange={e => setEditForm({...editForm, brand: e.target.value})} />
-                  </div>
-                ) : (
-                  <div>
-                    <p className="font-bold text-gray-800">{p.name}</p>
-                    <p className="text-xs text-gray-500">{p.brand} — €{p.price}</p>
-                    {p.is_featured && <span className="text-[10px] bg-rose-400 text-white px-2 py-0.5 rounded-full uppercase font-bold">In Vetrina</span>}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-3 rounded-full transition-all ${p.is_featured ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-200 text-gray-400'}`} title="Metti/Togli dalla Home">
-                  <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
-                </button>
-                {editingId === p.id ? (
-                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full"><Check size={20}/></button>
-                ) : (
-                  <button onClick={() => startEditing(p)} className="bg-white text-blue-400 p-3 rounded-full border border-blue-100"><Edit2 size={20}/></button>
-                )}
-                <button onClick={() => deleteProduct(p.id)} className="bg-white text-rose-400 p-3 rounded-full border border-rose-100"><Trash2 size={20}/></button>
-              </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <h2 className="text-2xl font-serif italic">Gestione Catalogo ({filteredProducts.length})</h2>
+          
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* Barra di Ricerca */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Cerca nome o marchio..." 
+                className="pl-10 pr-4 py-2 border border-rose-100 rounded-full outline-none focus:ring-2 ring-rose-200 w-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-          ))}
+            
+            {/* Filtro Categoria */}
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <select 
+                className="pl-10 pr-8 py-2 border border-rose-100 rounded-full outline-none appearance-none bg-white focus:ring-2 ring-rose-200 w-full"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">Tutte le Categorie</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+          {filteredProducts.length === 0 ? (
+            <p className="text-center py-10 text-gray-400 italic">Nessun prodotto trovato con questi filtri.</p>
+          ) : (
+            filteredProducts.map(p => (
+              <div key={p.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-gray-50 rounded-[2rem] border border-gray-100 gap-4">
+                <div className="flex items-center gap-5">
+                  <img src={p.image_url} className="w-16 h-16 rounded-xl object-cover shadow-sm" />
+                  {editingId === p.id ? (
+                    <div className="flex flex-col gap-2">
+                      <input type="text" className="border px-3 py-1 rounded-lg text-sm" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                      <input type="text" className="border px-3 py-1 rounded-lg text-sm" value={editForm.brand} onChange={e => setEditForm({...editForm, brand: e.target.value})} />
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="font-bold text-gray-800">{p.name}</p>
+                      <p className="text-[10px] text-rose-400 font-bold uppercase mb-1">
+                        {p.categories?.name || 'Senza Categoria'}
+                      </p>
+                      <p className="text-xs text-gray-500">{p.brand} — €{p.price}</p>
+                      {p.is_featured && <span className="text-[10px] bg-rose-400 text-white px-2 py-0.5 rounded-full uppercase font-bold mt-1 inline-block">Home</span>}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-3 rounded-full transition-all ${p.is_featured ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-200 text-gray-400'}`} title="Metti/Togli dalla Home">
+                    <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
+                  </button>
+                  {editingId === p.id ? (
+                    <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full"><Check size={20}/></button>
+                  ) : (
+                    <button onClick={() => startEditing(p)} className="bg-white text-blue-400 p-3 rounded-full border border-blue-100"><Edit2 size={20}/></button>
+                  )}
+                  <button onClick={() => deleteProduct(p.id)} className="bg-white text-rose-400 p-3 rounded-full border border-rose-100"><Trash2 size={20}/></button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
