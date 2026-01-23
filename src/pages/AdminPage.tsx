@@ -41,8 +41,8 @@ export function AdminPage() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-rose-400"></div>
+            <div className="flex justify-center py-10 text-rose-400 italic">
+              Caricamento contatti...
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -51,24 +51,20 @@ export function AdminPage() {
                   <tr className="border-b border-rose-100 italic text-rose-400 text-sm uppercase tracking-widest">
                     <th className="py-4 px-4">Nome Cliente</th>
                     <th className="py-4 px-4">Cellulare</th>
-                    <th className="py-4 px-4">Data</th>
                     <th className="py-4 px-4 text-center">Azione</th>
                   </tr>
                 </thead>
                 <tbody>
                   {subscribers.map((sub) => (
-                    <tr key={sub.id} className="border-b border-gray-50 hover:bg-rose-50/50 transition-colors">
-                      <td className="py-4 px-4 font-serif text-lg text-gray-700">{sub.name}</td>
-                      <td className="py-4 px-4 font-mono text-gray-600">{sub.phone}</td>
-                      <td className="py-4 px-4 text-gray-400 text-sm">
-                        {new Date(sub.created_at).toLocaleDateString('it-IT')}
-                      </td>
+                    <tr key={sub.id} className="border-b border-gray-50 hover:bg-rose-50/50 transition-colors text-gray-700">
+                      <td className="py-4 px-4 font-serif text-lg">{sub.name}</td>
+                      <td className="py-4 px-4 font-mono">{sub.phone}</td>
                       <td className="py-4 px-4 flex justify-center">
                         <a 
-                          href={`https://wa.me/${sub.phone.replace(/\s+/g, '')}`} 
+                          href={`https://wa.me/${sub.phone.replace(/\D/g, '')}`} 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-all hover:scale-110 shadow-md"
+                          className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-all shadow-md"
                         >
                           <MessageCircle size={20} />
                         </a>
