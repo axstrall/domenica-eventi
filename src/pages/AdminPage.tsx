@@ -17,7 +17,8 @@ export function AdminPage() {
     category_id: '',
     image_url: '',
     is_featured: false,
-    brand: ''
+    brand: '',
+    price: '' // Aggiunto stato per il prezzo
   });
 
   const SECRET_PASSWORD = "Domenica2024";
@@ -44,7 +45,6 @@ export function AdminPage() {
     }
   }, [isAuthenticated]);
 
-  // FUNZIONE PER CARICARE L'IMMAGINE
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -83,12 +83,26 @@ export function AdminPage() {
     }
 
     try {
-      const { error } = await supabase.from('products').insert([newProduct]);
+      // Prepariamo i dati completi includendo lo slug e il prezzo numerico
+      const productData = {
+        name: newProduct.name,
+        description: newProduct.description,
+        category_id: newProduct.category_id,
+        image_url: newProduct.image_url,
+        is_featured: newProduct.is_featured,
+        brand: newProduct.brand,
+        price: parseFloat(newProduct.price) || 0,
+        slug: newProduct.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '')
+      };
+
+      const { error } = await supabase.from('products').insert([productData]);
       if (error) throw error;
+      
       alert("Articolo pubblicato con successo!");
-      setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand: '' });
+      setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand: '', price: '' });
     } catch (err) {
-      alert("Errore nel salvataggio del prodotto");
+      console.error(err);
+      alert("Errore nel salvataggio del prodotto nel database");
     }
   };
 
@@ -151,6 +165,11 @@ export function AdminPage() {
             className="px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 outline-none"
             value={newProduct.brand} onChange={e => setNewProduct({...newProduct, brand: e.target.value})}
           />
+          <input 
+            type="number" step="0.01" placeholder="Prezzo (es: 25.00)" required
+            className="px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 outline-none"
+            value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})}
+          />
           <select 
             required className="px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 outline-none"
             value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})}
@@ -158,12 +177,12 @@ export function AdminPage() {
             <option value="">Seleziona Categoria</option>
             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
           </select>
-          <div className="flex items-center gap-4 px-4">
+          <div className="flex items-center gap-4 px-4 md:col-span-2">
             <input 
               type="checkbox" id="featured" className="w-5 h-5 accent-rose-400"
               checked={newProduct.is_featured} onChange={e => setNewProduct({...newProduct, is_featured: e.target.checked})}
             />
-            <label htmlFor="featured" className="text-gray-600 font-medium italic">Metti in evidenza</label>
+            <label htmlFor="featured" className="text-gray-600 font-medium italic">Metti in evidenza nella Home</label>
           </div>
           <textarea 
             placeholder="Descrizione" className="md:col-span-2 px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 h-24 outline-none"
@@ -175,7 +194,7 @@ export function AdminPage() {
         </form>
       </section>
 
-      {/* RUBRICA WHATSAPP (In basso) */}
+      {/* RUBRICA WHATSAPP */}
       <section className="bg-white/90 backdrop-blur-md p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
