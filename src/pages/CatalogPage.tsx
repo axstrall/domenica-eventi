@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import   Header  from '../components/Header';
+import Header from '../components/Header';
 import { ProductGrid } from '../components/ProductGrid';
 import { QuoteModal } from '../components/QuoteModal';
 import { Footer } from '../components/Footer';
@@ -15,8 +15,15 @@ export function CatalogPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Leggiamo lo slug dall'URL in modo sicuro
+  // Marchi trattati
+  const brands = [
+    'Hervit', 'Blanc Mariclò', 'Enzo de Gasperi', 
+    'Mathilde M', 'BRANDANI', 'Nuvole di Stoffa', 'Chez Moi Italia'
+  ];
+
+  // Leggiamo categoria e marchio dall'URL
   const categorySlug = searchParams.get('category');
+  const selectedBrand = searchParams.get('brand');
 
   useEffect(() => {
     async function fetchData() {
@@ -38,40 +45,84 @@ export function CatalogPage() {
   }, []);
 
   const handleCategoryChange = (slug: string | null) => {
-    if (slug) setSearchParams({ category: slug });
-    else setSearchParams({});
+    const newParams: any = {};
+    if (slug) newParams.category = slug;
+    if (selectedBrand) newParams.brand = selectedBrand;
+    setSearchParams(newParams);
   };
 
-  // Logica di filtraggio ultra-sicura
+  const handleBrandChange = (brand: string | null) => {
+    const newParams: any = {};
+    if (brand) newParams.brand = brand;
+    if (categorySlug) newParams.category = categorySlug;
+    setSearchParams(newParams);
+  };
+
+  // Filtraggio incrociato Marchio + Categoria
   const filteredProducts = products.filter(p => {
-    if (!categorySlug) return true;
-    const cat = categories.find(c => c.slug === categorySlug);
-    return cat ? p.category_id === cat.id : true;
+    let matchesCategory = true;
+    let matchesBrand = true;
+
+    if (categorySlug) {
+      const cat = categories.find(c => c.slug === categorySlug);
+      matchesCategory = cat ? p.category_id === cat.id : true;
+    }
+
+    if (selectedBrand) {
+      // Nota: Assicurati che nel DB la colonna si chiami 'brand'
+      matchesBrand = p.brand === selectedBrand;
+    }
+
+    return matchesCategory && matchesBrand;
   });
 
-  const title = categories.find(c => c.slug === categorySlug)?.name || "Il Nostro Catalogo";
+  const title = categories.find(c => c.slug === categorySlug)?.name || 
+                (selectedBrand ? `Collezione ${selectedBrand}` : "Il Nostro Catalogo");
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <Header categories={categories} onCategoryClick={handleCategoryChange} />
+    /* CAMBIATO: bg-transparent per mostrare lo sfondo fiori */
+    <div className="min-h-screen bg-transparent flex flex-col">
+      <Header categories={categories} />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
-        <h1 className="text-4xl font-serif text-gray-800 mb-2">{title}</h1>
+        <h1 className="text-4xl font-serif text-gray-800 mb-2 uppercase tracking-tight">{title}</h1>
         <div className="h-1 w-20 bg-rose-300 mb-10"></div>
 
-        {/* Filtri */}
+        {/* --- SEZIONE FILTRI MARCHI (Cliccabili) --- */}
+        <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 mb-10 border border-rose-100/50">
+          <p className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-4">Filtra per Marchio:</p>
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => handleBrandChange(null)}
+              className={`text-sm font-medium transition-all ${!selectedBrand ? 'text-rose-500 font-bold' : 'text-gray-500 hover:text-rose-400'}`}
+            >
+              Tutti i Marchi
+            </button>
+            {brands.map((brand) => (
+              <button
+                key={brand}
+                onClick={() => handleBrandChange(brand)}
+                className={`text-sm font-medium transition-all ${selectedBrand === brand ? 'text-rose-500 font-bold underline decoration-2' : 'text-gray-500 hover:text-rose-400'}`}
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* --- FILTRI CATEGORIE --- */}
         <div className="flex flex-wrap gap-2 mb-10">
           <button
             onClick={() => handleCategoryChange(null)}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${!categorySlug ? 'bg-rose-400 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${!categorySlug ? 'bg-rose-400 text-white shadow-md' : 'bg-white/50 text-gray-600 border border-gray-200'}`}
           >
-            Tutti
+            Tutte le Categorie
           </button>
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => handleCategoryChange(cat.slug)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${categorySlug === cat.slug ? 'bg-rose-400 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${categorySlug === cat.slug ? 'bg-rose-400 text-white shadow-md' : 'bg-white/50 text-gray-600 border border-gray-200'}`}
             >
               {cat.name}
             </button>

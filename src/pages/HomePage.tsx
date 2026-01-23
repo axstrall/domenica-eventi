@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { Hero } from '../components/Hero';
 import { ProductGrid } from '../components/ProductGrid';
@@ -15,6 +15,13 @@ export function HomePage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // Elenco dei tuoi marchi
+  const brands = [
+    'Hervit', 'Blanc Mariclò', 'Enzo de Gasperi', 
+    'Mathilde M', 'BRANDANI', 'Nuvole di Stoffa', 'Chez Moi Italia'
+  ];
 
   useEffect(() => {
     loadData();
@@ -48,10 +55,29 @@ export function HomePage() {
   };
 
   return (
-    /* CAMBIATO: bg-transparent per far vedere i fiori di App.tsx */
     <div className="min-h-screen bg-transparent">
       <Header categories={categories} />
       <Hero />
+
+      {/* --- NUOVA SEZIONE MARCHI --- */}
+      <section className="py-12 bg-white/30 backdrop-blur-sm border-y border-rose-100/50">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-center text-rose-400 font-serif italic mb-8 tracking-[0.2em] uppercase text-sm font-bold">
+            I Nostri Marchi
+          </h2>
+          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
+            {brands.map((brand) => (
+              <button
+                key={brand}
+                onClick={() => navigate(`/catalog?brand=${encodeURIComponent(brand)}`)}
+                className="text-slate-700 font-serif text-lg md:text-xl hover:text-rose-500 transition-all duration-300 hover:scale-110 tracking-tight uppercase"
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
