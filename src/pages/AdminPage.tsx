@@ -27,18 +27,19 @@ export function AdminPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [subsRes, catsRes, brndsRes, prodsRes] = await Promise.all([
-        supabase.from('whatsapp_subscribers').select('*').order('created_at', { ascending: false }),
-        supabase.from('categories').select('*').order('name'),
-        supabase.from('brands').select('*').order('name'),
-        supabase.from('products').select('*, brands(name)').order('created_at', { ascending: false })
-      ]);
+      // Carichiamo le tabelle separatamente per evitare che un errore in una blocchi le altre
+      const { data: subs } = await supabase.from('whatsapp_subscribers').select('*').order('created_at', { ascending: false });
+      const { data: cats } = await supabase.from('categories').select('*').order('name');
+      const { data: brnds } = await supabase.from('brands').select('*').order('name');
+      const { data: prods } = await supabase.from('products').select('*').order('created_at', { ascending: false });
 
-      if (subsRes.data) setSubscribers(subsRes.data);
-      if (catsRes.data) setCategories(catsRes.data);
-      if (brndsRes.data) setBrands(brndsRes.data);
-      if (prodsRes.data) setProducts(prodsRes.data);
-    } catch (err) { console.error("Errore caricamento dati"); }
+      if (subs) setSubscribers(subs);
+      if (cats) setCategories(cats);
+      if (brnds) setBrands(brnds);
+      if (prods) setProducts(prods);
+    } catch (err) { 
+      console.error("Errore caricamento dati"); 
+    }
     setIsLoading(false);
   };
 
@@ -57,7 +58,7 @@ export function AdminPage() {
       await supabase.storage.from('product-images').upload(fileName, file);
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
       setNewProduct({ ...newProduct, image_url: publicUrl });
-    } catch (err) { alert("Errore caricamento foto"); } finally { setIsUploading(false); }
+    } catch (err) { alert("Errore foto"); } finally { setIsUploading(false); }
   };
 
   const handleAddBrand = async (e: React.FormEvent) => {
@@ -65,12 +66,10 @@ export function AdminPage() {
     if (!newBrandName.trim()) return;
     const { error } = await supabase.from('brands').insert([{ name: newBrandName.trim() }]);
     if (!error) { setNewBrandName(''); loadData(); }
-    else { alert("Errore: controlla i permessi RLS su Supabase."); }
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProduct.image_url) { alert("Carica prima una foto!"); return; }
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
       const slug = (newProduct.name || 'item').toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000);
@@ -81,10 +80,10 @@ export function AdminPage() {
         slug
       }]);
       if (error) throw error;
-      alert("Prodotto Caricato con Successo!");
+      alert("Prodotto Caricato!");
       loadData();
       setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '' });
-    } catch (err: any) { alert("Errore: " + err.message); }
+    } catch (err: any) { alert(err.message); }
   };
 
   const toggleFeatured = async (id: string, currentStatus: boolean) => {
@@ -112,16 +111,16 @@ export function AdminPage() {
       await supabase.from('products').delete().eq('id', id);
       loadData();
     }
-  };
+  }
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50/50 p-6">
         <h1 className="text-4xl font-serif text-rose-400 italic mb-8">Domenica Admin</h1>
-        <form onSubmit={(e) => { e.preventDefault(); if (password === SECRET_PASSWORD) setIsAuthenticated(true); else alert("Password Errata"); }} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center">
+        <form onSubmit={(e) => { e.preventDefault(); if (password === SECRET_PASSWORD) setIsAuthenticated(true); }} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center">
           <Lock className="mx-auto text-rose-300 mb-6" size={40} />
-          <input type="password" placeholder="Password Admin" className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center outline-none border border-rose-100 shadow-sm" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <button className="w-full bg-rose-400 text-white py-5 rounded-full font-bold uppercase tracking-widest shadow-lg hover:bg-rose-500 transition-all">Accedi</button>
+          <input type="password" placeholder="Password" className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none" onChange={(e) => setPassword(e.target.value)} required />
+          <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg">Entra</button>
         </form>
       </div>
     );
@@ -135,8 +134,8 @@ export function AdminPage() {
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800"><Tag className="text-rose-400"/> Gestione Marchi</h2>
         <form onSubmit={handleAddBrand} className="flex gap-4 mb-6">
-          <input type="text" placeholder="Nuovo Marchio (es: Hervit)" className="flex-1 border p-4 rounded-2xl outline-none shadow-sm focus:ring-2 ring-rose-200" value={newBrandName} onChange={e => setNewBrandName(e.target.value)} />
-          <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase shadow-md hover:bg-rose-500 transition-all"><PlusCircle /></button>
+          <input type="text" placeholder="Nuovo Marchio (es: Hervit)" className="flex-1 border p-4 rounded-2xl outline-none" value={newBrandName} onChange={e => setNewBrandName(e.target.value)} />
+          <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase shadow-md"><PlusCircle /></button>
         </form>
         <div className="flex flex-wrap gap-2">
           {brands.map(b => (
@@ -145,49 +144,49 @@ export function AdminPage() {
         </div>
       </section>
 
-      {/* NUOVO ARTICOLO (RIPRISTINATO) */}
+      {/* NUOVO ARTICOLO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-3xl font-serif italic mb-8 text-gray-800">Nuovo Articolo</h2>
         <form onSubmit={handleAddProduct} className="grid gap-6">
-          <label className="border-2 border-dashed border-rose-200 h-48 rounded-3xl flex items-center justify-center cursor-pointer bg-rose-50/20 hover:bg-rose-50/40 transition-all overflow-hidden shadow-inner">
-            {newProduct.image_url ? <img src={newProduct.image_url} className="w-full h-full object-cover" /> : <div className="text-rose-400 flex flex-col items-center">{isUploading ? <Loader2 className="animate-spin mb-2"/> : <Upload className="mb-2"/>}<span>CARICA FOTO</span></div>}
-            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+          <label className="border-2 border-dashed border-rose-200 h-40 rounded-3xl flex items-center justify-center cursor-pointer bg-rose-50/20 overflow-hidden shadow-inner">
+            {newProduct.image_url ? <img src={newProduct.image_url} className="w-full h-full object-cover" /> : <div className="text-rose-400 flex flex-col items-center"><Upload className="mb-2"/><span>CARICA FOTO</span></div>}
+            <input type="file" className="hidden" onChange={handleImageUpload} />
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" placeholder="Nome Prodotto" className="border p-4 rounded-2xl outline-none shadow-sm focus:ring-2 ring-rose-100" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} required />
-            <input type="text" placeholder="Prezzo" className="border p-4 rounded-2xl outline-none shadow-sm focus:ring-2 ring-rose-100" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
-            <select className="border p-4 rounded-2xl outline-none text-gray-500 bg-white shadow-sm focus:ring-2 ring-rose-100" value={newProduct.brand_id} onChange={e => setNewProduct({...newProduct, brand_id: e.target.value})}>
+            <input type="text" placeholder="Nome" className="border p-4 rounded-2xl outline-none" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} required />
+            <input type="text" placeholder="Prezzo" className="border p-4 rounded-2xl outline-none" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
+            <select className="border p-4 rounded-2xl outline-none text-gray-400 bg-white" value={newProduct.brand_id} onChange={e => setNewProduct({...newProduct, brand_id: e.target.value})}>
               <option value="">Scegli Marchio...</option>
               {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
-            <select className="border p-4 rounded-2xl outline-none text-gray-500 bg-white shadow-sm focus:ring-2 ring-rose-100" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
-              <option value="">Scegli Categoria...</option>
+            <select className="border p-4 rounded-2xl outline-none text-gray-400 bg-white" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
+              <option value="">Categoria...</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-3 bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
             <input type="checkbox" id="feat" checked={newProduct.is_featured} onChange={e => setNewProduct({...newProduct, is_featured: e.target.checked})} className="w-5 h-5 accent-rose-400" />
-            <label htmlFor="feat" className="text-rose-400 font-bold italic cursor-pointer text-sm">Metti in evidenza nella Home Page</label>
+            <label htmlFor="feat" className="text-rose-400 font-bold italic cursor-pointer">Metti in evidenza nella Home Page</label>
           </div>
-          <button className="bg-slate-800 text-white p-5 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">Pubblica Articolo</button>
+          <button className="bg-slate-800 text-white p-5 rounded-2xl font-bold uppercase shadow-lg">Pubblica Articolo</button>
         </form>
       </section>
 
-      {/* CATALOGO PRODOTTI */}
+      {/* LISTA PRODOTTI */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-serif italic text-gray-800 font-medium">Catalogo Prodotti ({filteredProducts.length})</h2>
-          <div className="relative w-full md:w-auto"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={18} /><input type="text" placeholder="Cerca..." className="pl-10 pr-4 py-2 border border-rose-100 rounded-full text-sm outline-none shadow-sm w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+          <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={18}/><input type="text" placeholder="Cerca..." className="pl-10 pr-4 py-2 border border-rose-100 rounded-full text-sm outline-none shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
         </div>
         <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           {filteredProducts.map(p => (
-            <div key={p.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/20 transition-all gap-4">
+            <div key={p.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-gray-50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/20 transition-all gap-4">
               <div className="flex items-center gap-5">
                 <img src={p.image_url} className="w-16 h-16 rounded-xl object-cover shadow-sm border border-white" />
                 {editingId === p.id ? (
                   <div className="flex flex-col gap-2">
-                    <input className="border p-2 rounded-lg text-sm outline-none shadow-sm" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-                    <input className="border p-2 rounded-lg text-sm w-24 outline-none shadow-sm" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
+                    <input className="border p-2 rounded-lg text-sm outline-none" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                    <input className="border p-2 rounded-lg text-sm w-24 outline-none" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
                   </div>
                 ) : (
                   <div>
@@ -200,12 +199,12 @@ export function AdminPage() {
               </div>
               <div className="flex items-center gap-2 self-end">
                 <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-2 rounded-full transition-all ${p.is_featured ? 'text-yellow-500 bg-yellow-50 shadow-sm' : 'text-gray-300 hover:text-yellow-400'}`}>
-                   <Star size={22} fill={p.is_featured ? "currentColor" : "none"} />
+                   <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
                 </button>
                 {editingId === p.id ? (
                   <>
-                    <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-2 rounded-full shadow-md hover:bg-green-600 transition-all"><Check size={20}/></button>
-                    <button onClick={() => setEditingId(null)} className="bg-gray-400 text-white p-2 rounded-full shadow-md hover:bg-gray-500 transition-all"><X size={20}/></button>
+                    <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-2 rounded-full shadow-sm"><Check size={20}/></button>
+                    <button onClick={() => setEditingId(null)} className="bg-gray-400 text-white p-2 rounded-full shadow-sm"><X size={20}/></button>
                   </>
                 ) : (
                   <button onClick={() => startEditing(p)} className="bg-white text-blue-400 p-2 rounded-full border border-blue-100 shadow-sm hover:bg-blue-50 transition-all"><Edit2 size={20}/></button>
@@ -222,7 +221,7 @@ export function AdminPage() {
         <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 font-medium"><Database className="text-rose-400"/> Rubrica Clienti ({subscribers.length})</h2>
         <div className="space-y-3">
           {subscribers.map(s => (
-            <div key={s.id} className="flex justify-between items-center p-5 bg-rose-50/20 rounded-[2rem] border border-rose-100 hover:bg-rose-50/40 transition-all shadow-sm">
+            <div key={s.id} className="flex justify-between items-center p-4 bg-rose-50/20 rounded-[2rem] border border-rose-100 hover:bg-rose-50/40 transition-all shadow-sm">
               <div><p className="font-bold text-gray-800 font-serif">{s.name}</p><p className="text-sm text-gray-500 font-mono italic">{s.phone}</p></div>
               <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" className="bg-green-500 text-white p-3 rounded-full shadow-md hover:bg-green-600 transition-all hover:scale-110"><MessageCircle size={22}/></a>
             </div>
