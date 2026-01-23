@@ -60,9 +60,8 @@ export function AdminPage() {
         .from('product-images')
         .getPublicUrl(fileName);
       setNewProduct({ ...newProduct, image_url: publicUrl });
-      alert("Immagine caricata!");
     } catch (error) {
-      alert("Errore caricamento foto");
+      alert("Errore caricamento immagine");
     } finally {
       setIsUploading(false);
     }
@@ -70,77 +69,96 @@ export function AdminPage() {
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProduct.image_url) { alert("Carica una foto!"); return; }
+    if (!newProduct.image_url) { alert("Manca la foto!"); return; }
     
     try {
-      // Pulizia e preparazione dati infallibile
       const cleanPrice = parseFloat(newProduct.price.replace(',', '.'));
-      const finalSlug = (newProduct.name || 'prodotto')
+      const generatedSlug = (newProduct.name || 'prodotto')
         .toLowerCase()
+        .trim()
         .replace(/[^\w\s-]/g, '')
         .replace(/[\s_-]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
 
-      const dataToInsert = {
-        name: newProduct.name || 'Senza Nome',
+      const { data, error } = await supabase.from('products').insert([{
+        name: newProduct.name,
         description: newProduct.description || '',
-        category_id: newProduct.category_id || categories[0]?.id,
+        category_id: newProduct.category_id,
         image_url: newProduct.image_url,
         is_featured: !!newProduct.is_featured,
         brand: newProduct.brand || '',
         price: isNaN(cleanPrice) ? 0 : cleanPrice,
-        slug: finalSlug
-      };
+        slug: generatedSlug
+      }]).select();
 
-      const { error } = await supabase.from('products').insert([dataToInsert]);
-      if (error) throw error;
-      
-      alert("ARTICOLO PUBBLICATO!");
-      setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand: '', price: '' });
+      if (error) {
+        console.error("Errore Database:", error);
+        alert(`Errore: ${error.message}`);
+      } else {
+        alert("ARTICOLO PUBBLICATO CON SUCCESSO!");
+        setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand: '', price: '' });
+      }
     } catch (err) {
-      console.error(err);
-      alert("Errore salvataggio: riprova a ricaricare la pagina");
+      alert("Errore tecnico nel modulo");
     }
   };
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-rose-50">
-        <form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl shadow-xl">
-          <input 
-            type="password" placeholder="Password" 
-            className="border p-3 rounded-full text-center"
-            value={password} onChange={(e) => setPassword(e.target.value)}
-          />
-          <button className="block w-full mt-4 bg-rose-400 text-white p-3 rounded-full">Entra</button>
+        <form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl shadow-xl space-y-4">
+          <Lock className="mx-auto text-rose-400" size={40} />
+          <input type="password" placeholder="Password Admin" className="border p-3 rounded-full text-center block w-full outline-none" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button className="w-full bg-rose-400 text-white p-3 rounded-full font-bold">ACCEDI</button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto pt-24">
-      <h2 className="text-3xl font-serif italic mb-8">Nuovo Prodotto</h2>
-      <form onSubmit={handleAddProduct} className="grid gap-6 bg-white p-8 rounded-3xl shadow-lg border border-rose-100">
-        <label className="border-2 border-dashed border-rose-200 h-40 rounded-3xl flex items-center justify-center cursor-pointer overflow-hidden">
-          {newProduct.image_url ? <img src={newProduct.image_url} className="w-full h-full object-cover" /> : "Clicca per foto"}
-          <input type="file" className="hidden" onChange={handleImageUpload} />
-        </label>
-        
-        <input type="text" placeholder="Nome" className="border p-4 rounded-2xl outline-none" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} required />
-        <input type="text" placeholder="Prezzo (es: 25.50)" className="border p-4 rounded-2xl outline-none" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
-        
-        <select className="border p-4 rounded-2xl outline-none" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
-          <option value="">Scegli Categoria</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+    <div className="p-8 max-w-5xl mx-auto pt-32 space-y-12">
+      <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
+        <h2 className="text-3xl font-serif italic mb-8 flex items-center gap-2"><PlusCircle /> Nuovo Prodotto</h2>
+        <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="md:col-span-2">
+            <label className="border-2 border-dashed border-rose-200 h-48 rounded-3xl flex flex-col items-center justify-center cursor-pointer overflow-hidden bg-rose-50/20">
+              {newProduct.image_url ? (
+                <img src={newProduct.image_url} className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-rose-400 flex flex-col items-center">
+                  {isUploading ? <Loader2 className="animate-spin" /> : <Upload />}
+                  <span className="text-sm font-bold mt-2">CARICA FOTO</span>
+                </div>
+              )}
+              <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+            </label>
+          </div>
+          <input type="text" placeholder="Nome Articolo" className="border p-4 rounded-2xl outline-none" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} required />
+          <input type="text" placeholder="Marchio" className="border p-4 rounded-2xl outline-none" value={newProduct.brand} onChange={e => setNewProduct({...newProduct, brand: e.target.value})} />
+          <input type="text" placeholder="Prezzo (es: 25.00)" className="border p-4 rounded-2xl outline-none" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
+          <select className="border p-4 rounded-2xl outline-none" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
+            <option value="">Scegli Categoria...</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <textarea placeholder="Descrizione" className="md:col-span-2 border p-4 rounded-2xl h-24 outline-none" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
+          <div className="flex items-center gap-3 px-2">
+            <input type="checkbox" id="feat" checked={newProduct.is_featured} onChange={e => setNewProduct({...newProduct, is_featured: e.target.checked})} />
+            <label htmlFor="feat" className="text-gray-600 italic">Metti in evidenza</label>
+          </div>
+          <button className="md:col-span-2 bg-slate-800 text-white p-5 rounded-2xl font-bold uppercase tracking-widest hover:bg-rose-500 transition-colors">PUBBLICA ORA</button>
+        </form>
+      </section>
 
-        <button className="bg-slate-800 text-white p-5 rounded-2xl font-bold uppercase">Pubblica Prodotto</button>
-      </form>
-
-      <div className="mt-12">
-        <h3 className="text-xl font-bold mb-4">Rubrica</h3>
-        {subscribers.map(s => <div key={s.id} className="p-2 border-b">{s.name} - {s.phone}</div>)}
-      </div>
+      <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
+        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2"><Database /> Rubrica Iscritti ({subscribers.length})</h2>
+        <div className="space-y-4">
+          {subscribers.map(s => (
+            <div key={s.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl">
+              <span className="font-bold">{s.name} - {s.phone}</span>
+              <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" className="bg-green-500 text-white p-2 rounded-full"><MessageCircle size={20}/></a>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
