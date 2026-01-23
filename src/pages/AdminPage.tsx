@@ -16,7 +16,7 @@ export function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [newBrandName, setNewBrandName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', price: '' });
+  const [editForm, setEditForm] = useState({ name: '', price: '', brand_id: '' });
 
   const [newProduct, setNewProduct] = useState({
     name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: ''
@@ -27,7 +27,6 @@ export function AdminPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Carichiamo ogni tabella singolarmente per non bloccare la pagina in caso di errori RLS
       const { data: subs } = await supabase.from('whatsapp_subscribers').select('*').order('created_at', { ascending: false });
       const { data: cats } = await supabase.from('categories').select('*').order('name');
       const { data: brnds } = await supabase.from('brands').select('*').order('name');
@@ -37,7 +36,7 @@ export function AdminPage() {
       setCategories(cats || []);
       setBrands(brnds || []);
       setProducts(prods || []);
-    } catch (err) { console.error("Errore caricamento dati"); }
+    } catch (err) { console.error("Errore caricamento"); }
     setIsLoading(false);
   };
 
@@ -59,9 +58,10 @@ export function AdminPage() {
     e.preventDefault();
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
-      const slug = (newProduct.name || 'item').toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000);
       const { error } = await supabase.from('products').insert([{
-        ...newProduct, price: isNaN(cleanPrice) ? 0 : cleanPrice, slug
+        ...newProduct, 
+        price: isNaN(cleanPrice) ? 0 : cleanPrice, 
+        slug: newProduct.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000)
       }]);
       if (error) throw error;
       alert("Prodotto Caricato!");
@@ -78,16 +78,18 @@ export function AdminPage() {
   const saveEdit = async (id: string) => {
     const cleanPrice = parseFloat(editForm.price.replace(',', '.'));
     const { error } = await supabase.from('products').update({
-      name: editForm.name, price: isNaN(cleanPrice) ? 0 : cleanPrice
+      name: editForm.name,
+      price: isNaN(cleanPrice) ? 0 : cleanPrice,
+      brand_id: editForm.brand_id || null
     }).eq('id', id);
     if (!error) { setEditingId(null); loadData(); }
   };
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50/50 p-6">
-        <h1 className="text-4xl font-serif text-rose-400 italic mb-8">Domenica Admin</h1>
-        <form onSubmit={(e) => { e.preventDefault(); if (password === SECRET_PASSWORD) setIsAuthenticated(true); }} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50/50 p-6 font-sans">
+        <h1 className="text-4xl font-serif text-rose-400 italic mb-8 uppercase text-center">Domenica Admin</h1>
+        <form onSubmit={(e) => { e.preventDefault(); if (password === SECRET_PASSWORD) setIsAuthenticated(true); }} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100">
           <input type="password" placeholder="Password" className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border outline-none" onChange={(e) => setPassword(e.target.value)} required />
           <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg">Entra</button>
         </form>
@@ -99,16 +101,17 @@ export function AdminPage() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto pt-24 space-y-12 pb-20 font-sans">
       <Link to="/" className="text-rose-400 font-bold italic mb-4">← Torna al Sito</Link>
 
-      {/* AGGIUNGI MARCHIO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
-        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2"><Tag className="text-rose-400"/> Gestione Marchi</h2>
-        <form onSubmit={async (e) => { e.preventDefault(); await supabase.from('brands').insert([{ name: newBrandName }]); setNewBrandName(''); loadData(); }} className="flex gap-4">
+        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2"><Tag className="text-rose-400"/> Marchi</h2>
+        <form onSubmit={async (e) => { e.preventDefault(); await supabase.from('brands').insert([{ name: newBrandName }]); setNewBrandName(''); loadData(); }} className="flex gap-4 mb-6">
           <input type="text" placeholder="Nuovo Marchio..." className="flex-1 border p-4 rounded-2xl outline-none" value={newBrandName} onChange={e => setNewBrandName(e.target.value)} />
           <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase shadow-md"><PlusCircle /></button>
         </form>
+        <div className="flex flex-wrap gap-2">
+          {brands.map(b => <span key={b.id} className="bg-rose-50 text-rose-500 px-4 py-2 rounded-full text-xs font-bold border border-rose-100 uppercase">{b.name}</span>)}
+        </div>
       </section>
 
-      {/* NUOVO ARTICOLO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-8">Nuovo Articolo</h2>
         <form onSubmit={handleAddProduct} className="grid gap-6">
@@ -124,7 +127,7 @@ export function AdminPage() {
               {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
             <select className="border p-4 rounded-2xl outline-none bg-white" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
-              <option value="">Scegli Categoria...</option>
+              <option value="">Categoria...</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -132,7 +135,6 @@ export function AdminPage() {
         </form>
       </section>
 
-      {/* CATALOGO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-8">Catalogo ({products.length})</h2>
         <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
@@ -142,8 +144,8 @@ export function AdminPage() {
                 <img src={p.image_url} className="w-16 h-16 rounded-xl object-cover" />
                 {editingId === p.id ? (
                   <div className="flex flex-col gap-2">
-                    <input className="border p-2 rounded-lg text-sm" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-                    <input className="border p-2 rounded-lg text-sm w-24" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
+                    <input className="border px-2 py-1 rounded-lg text-sm" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                    <input className="border px-2 py-1 rounded-lg text-sm w-24" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
                   </div>
                 ) : (
                   <div><p className="font-bold text-gray-800">{p.name}</p><p className="text-xs text-rose-400 font-bold uppercase">€{p.price}</p></div>
@@ -152,9 +154,9 @@ export function AdminPage() {
               <div className="flex items-center gap-2">
                 <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-2 rounded-full ${p.is_featured ? 'text-yellow-500 bg-yellow-50' : 'text-gray-300'}`}><Star size={22} fill={p.is_featured ? "currentColor" : "none"} /></button>
                 {editingId === p.id ? (
-                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-2 rounded-full shadow-sm"><Check size={20}/></button>
+                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-2 rounded-full"><Check size={20}/></button>
                 ) : (
-                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString()}); }} className="bg-white text-blue-400 p-2 rounded-full border shadow-sm"><Edit2 size={20}/></button>
+                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), brand_id: p.brand_id || ''}); }} className="bg-white text-blue-400 p-2 rounded-full border shadow-sm"><Edit2 size={20}/></button>
                 )}
                 <button onClick={async () => { if(confirm("Eliminare?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-2 rounded-full border shadow-sm"><Trash2 size={20}/></button>
               </div>
@@ -163,13 +165,12 @@ export function AdminPage() {
         </div>
       </section>
 
-      {/* RUBRICA */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
-        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 font-medium"><Database className="text-rose-400"/> Rubrica Clienti ({subscribers.length})</h2>
+        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2"><Database className="text-rose-400"/> Rubrica ({subscribers.length})</h2>
         <div className="space-y-3">
           {subscribers.map(s => (
-            <div key={s.id} className="flex justify-between items-center p-5 bg-rose-50/20 rounded-[2rem] border border-rose-100">
-              <div><p className="font-bold text-gray-800 font-serif">{s.name}</p><p className="text-sm text-gray-500 font-mono italic">{s.phone}</p></div>
+            <div key={s.id} className="flex justify-between items-center p-5 bg-rose-50/20 rounded-[2rem] border border-rose-100 shadow-sm">
+              <div><p className="font-bold text-gray-800">{s.name}</p><p className="text-sm text-gray-500 font-mono italic">{s.phone}</p></div>
               <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" className="bg-green-500 text-white p-3 rounded-full shadow-md"><MessageCircle size={22}/></a>
             </div>
           ))}
