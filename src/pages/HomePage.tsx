@@ -69,7 +69,7 @@ export function HomePage() {
 
   // FUNZIONE WHATSAPP CON IL TUO NUMERO CORRETTO
   const handleRequestQuote = (product: Product) => {
-    const mioNumero = "393450841203"; 
+    const mioNumero = "3336980879"; 
     const messaggio = encodeURIComponent(
       `Ciao Domenica! 👋 Desidero ricevere informazioni sul prodotto: "${product.name}" (Prezzo: €${product.price}). Mi potresti aiutare?`
     );
