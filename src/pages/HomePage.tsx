@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { Hero } from '../components/Hero';
 import { ProductGrid } from '../components/ProductGrid';
-import { QuoteModal } from '../components/QuoteModal';
 import { Footer } from '../components/Footer';
 import { Testimonials } from '../components/Testimonials';
 import { supabase } from '../lib/supabase';
@@ -13,11 +12,8 @@ import type { Product, Category } from '../lib/database.types';
 export function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Stati per il modulo WhatsApp
   const [whatsappName, setWhatsappName] = useState('');
   const [whatsappPhone, setWhatsappPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,11 +46,9 @@ export function HomePage() {
     }
   };
 
-  // FUNZIONE PER SALVARE IL NUMERO SU SUPABASE
   const handleWhatsappSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       const { error } = await supabase
         .from('whatsapp_subscribers')
@@ -62,7 +56,7 @@ export function HomePage() {
 
       if (error) throw error;
 
-      alert(`Grazie ${whatsappName}! Ti abbiamo inserito nella nostra lista WhatsApp. Verrai avvisato per ogni novità!`);
+      alert(`Grazie ${whatsappName}! Ti abbiamo inserito nella nostra lista. Verrai avvisato per ogni novità!`);
       setWhatsappName('');
       setWhatsappPhone('');
     } catch (error) {
@@ -73,14 +67,13 @@ export function HomePage() {
     }
   };
 
+  // FUNZIONE WHATSAPP CON IL TUO NUMERO CORRETTO
   const handleRequestQuote = (product: Product) => {
-    setSelectedProduct(product);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedProduct(null);
+    const mioNumero = "393450841203"; 
+    const messaggio = encodeURIComponent(
+      `Ciao Domenica! 👋 Desidero ricevere informazioni sul prodotto: "${product.name}" (Prezzo: €${product.price}). Mi potresti aiutare?`
+    );
+    window.open(`https://wa.me/${mioNumero}?text=${messaggio}`, '_blank');
   };
 
   return (
@@ -92,7 +85,6 @@ export function HomePage() {
       <Header categories={categories} />
       <Hero />
 
-      {/* --- SEZIONE MARCHI --- */}
       <section className="py-12 bg-white/30 backdrop-blur-sm border-y border-rose-100/50">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-center text-rose-400 font-serif italic mb-8 tracking-[0.2em] uppercase text-sm font-bold">
@@ -112,7 +104,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* --- BADGE DI FIDUCIA --- */}
       <section className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {[
@@ -171,12 +162,11 @@ export function HomePage() {
           </div>
         ) : products.length > 0 && (
           <div className="pb-20">
-             <ProductGrid products={products} onRequestQuote={handleRequestQuote} title="Pezzi Unici in Evidenza" />
+              <ProductGrid products={products} onRequestQuote={handleRequestQuote} title="Pezzi Unici in Evidenza" />
           </div>
         )}
       </main>
 
-      {/* --- SEZIONE CHI SIAMO --- */}
       <section className="py-24 bg-white/40 backdrop-blur-md border-y border-rose-100/50">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <div className="relative">
@@ -193,7 +183,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* --- NEWSLETTER WHATSAPP --- */}
       <section className="py-24 px-4">
         <div className="max-w-5xl mx-auto bg-slate-900 rounded-[4rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl">
           <div className="relative z-10">
@@ -220,6 +209,7 @@ export function HomePage() {
                 className="flex-grow px-8 py-5 rounded-full bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-rose-400 backdrop-blur-sm"
               />
               <button 
+                type="submit"
                 disabled={isSubmitting}
                 className="bg-rose-400 text-white px-10 py-5 rounded-full font-bold uppercase text-xs tracking-widest hover:bg-rose-500 transition-all shadow-lg disabled:opacity-50"
               >
@@ -232,7 +222,6 @@ export function HomePage() {
 
       <Testimonials />
       <Footer />
-      <QuoteModal product={selectedProduct} isOpen={isModalOpen} onClose={handleCloseModal} />
     </div>
   );
 }
