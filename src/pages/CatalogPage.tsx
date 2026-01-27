@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import { ProductGrid } from '../components/ProductGrid';
-import { QuoteModal } from '../components/QuoteModal';
 import { Footer } from '../components/Footer';
 import { supabase } from '../lib/supabase';
 import type { Product, Category } from '../lib/database.types';
@@ -11,8 +10,6 @@ export function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Marchi trattati
@@ -44,6 +41,15 @@ export function CatalogPage() {
     fetchData();
   }, []);
 
+  // FUNZIONE WHATSAPP DIRETTA (Numero: 3336980879)
+  const handleRequestQuote = (product: Product) => {
+    const mioNumero = "393336980879"; 
+    const messaggio = encodeURIComponent(
+      `Ciao Domenica! 👋 Ho visto nel catalogo questo articolo: "${product.name}" (Prezzo: €${product.price}). Vorrei avere maggiori informazioni, grazie!`
+    );
+    window.open(`https://wa.me/${mioNumero}?text=${messaggio}`, '_blank');
+  };
+
   const handleCategoryChange = (slug: string | null) => {
     const newParams: any = {};
     if (slug) newParams.category = slug;
@@ -69,7 +75,7 @@ export function CatalogPage() {
     }
 
     if (selectedBrand) {
-      // Nota: Assicurati che nel DB la colonna si chiami 'brand'
+      // Nota: Filtriamo per la colonna brand del prodotto
       matchesBrand = p.brand === selectedBrand;
     }
 
@@ -80,7 +86,6 @@ export function CatalogPage() {
                 (selectedBrand ? `Collezione ${selectedBrand}` : "Il Nostro Catalogo");
 
   return (
-    /* CAMBIATO: bg-transparent per mostrare lo sfondo fiori */
     <div className="min-h-screen bg-transparent flex flex-col">
       <Header categories={categories} />
 
@@ -88,7 +93,7 @@ export function CatalogPage() {
         <h1 className="text-4xl font-serif text-gray-800 mb-2 uppercase tracking-tight">{title}</h1>
         <div className="h-1 w-20 bg-rose-300 mb-10"></div>
 
-        {/* --- SEZIONE FILTRI MARCHI (Cliccabili) --- */}
+        {/* --- SEZIONE FILTRI MARCHI --- */}
         <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 mb-10 border border-rose-100/50">
           <p className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-4">Filtra per Marchio:</p>
           <div className="flex flex-wrap gap-4">
@@ -136,21 +141,12 @@ export function CatalogPage() {
         ) : (
           <ProductGrid
             products={filteredProducts}
-            onRequestQuote={(p) => {
-              setSelectedProduct(p);
-              setIsModalOpen(true);
-            }}
+            onRequestQuote={handleRequestQuote}
           />
         )}
       </main>
 
       <Footer />
-
-      <QuoteModal
-        product={selectedProduct}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </div>
   );
 }
