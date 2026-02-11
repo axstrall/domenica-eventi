@@ -56,7 +56,6 @@ export function AdminPage() {
     } catch (err) { alert("Errore foto"); } finally { setIsUploading(false); }
   };
 
-  // --- NUOVA FUNZIONE PER ELIMINARE I MARCHI ---
   const handleDeleteBrand = async (brandId: string) => {
     if (window.confirm("Vuoi davvero eliminare questo marchio?")) {
       try {
@@ -69,17 +68,28 @@ export function AdminPage() {
     }
   };
 
+  // --- NUOVA FUNZIONE PER ELIMINARE I CONTATTI DALLA RUBRICA ---
+  const handleDeleteSubscriber = async (id: string) => {
+    if (window.confirm("Vuoi eliminare questo contatto dalla rubrica?")) {
+      try {
+        const { error } = await supabase.from('whatsapp_subscribers').delete().eq('id', id);
+        if (error) throw error;
+        loadData();
+      } catch (err: any) {
+        alert("Errore durante l'eliminazione: " + err.message);
+      }
+    }
+  };
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
-      
-      // Troviamo il nome del marchio selezionato per salvarlo anche come testo
       const selectedBrand = brands.find(b => b.id === newProduct.brand_id);
       
       const { error } = await supabase.from('products').insert([{
         ...newProduct, 
-        brand: selectedBrand ? selectedBrand.name : null, // Salviamo il nome nel campo brand
+        brand: selectedBrand ? selectedBrand.name : null,
         price: isNaN(cleanPrice) ? 0 : cleanPrice, 
         slug: newProduct.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000)
       }]);
@@ -239,9 +249,18 @@ export function AdminPage() {
         <div className="space-y-3">
           {subscribers.map(s => (
             <div key={s.id} className="flex justify-between items-center p-6 bg-rose-50/20 rounded-[2.5rem] border border-rose-100 shadow-sm hover:shadow-md transition-all">
-              <div>
-                <p className="font-bold text-gray-800 text-lg leading-tight">{s.name}</p>
-                <p className="text-sm text-gray-500 font-mono italic mt-1">{s.phone}</p>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => handleDeleteSubscriber(s.id)}
+                  className="text-rose-300 hover:text-rose-600 transition-colors p-1"
+                  title="Elimina contatto"
+                >
+                  <X size={20} />
+                </button>
+                <div>
+                  <p className="font-bold text-gray-800 text-lg leading-tight">{s.name}</p>
+                  <p className="text-sm text-gray-500 font-mono italic mt-1">{s.phone}</p>
+                </div>
               </div>
               <a 
                 href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} 
