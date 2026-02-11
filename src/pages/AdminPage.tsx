@@ -13,7 +13,9 @@ export function AdminPage() {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // --- STATO PER IL FILTRO DI RICERCA ---
   const [searchQuery, setSearchQuery] = useState('');
+  
   const [newBrandName, setNewBrandName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', price: '', brand_id: '' });
@@ -44,6 +46,11 @@ export function AdminPage() {
     if (isAuthenticated) loadData(); 
   }, [isAuthenticated]);
 
+  // --- LOGICA DI FILTRO ---
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -62,22 +69,17 @@ export function AdminPage() {
         const { error } = await supabase.from('brands').delete().eq('id', brandId);
         if (error) throw error;
         loadData();
-      } catch (err: any) {
-        alert("Errore durante l'eliminazione: " + err.message);
-      }
+      } catch (err: any) { alert("Errore: " + err.message); }
     }
   };
 
-  // --- NUOVA FUNZIONE PER ELIMINARE I CONTATTI DALLA RUBRICA ---
   const handleDeleteSubscriber = async (id: string) => {
     if (window.confirm("Vuoi eliminare questo contatto dalla rubrica?")) {
       try {
         const { error } = await supabase.from('whatsapp_subscribers').delete().eq('id', id);
         if (error) throw error;
         loadData();
-      } catch (err: any) {
-        alert("Errore durante l'eliminazione: " + err.message);
-      }
+      } catch (err: any) { alert("Errore: " + err.message); }
     }
   };
 
@@ -86,14 +88,12 @@ export function AdminPage() {
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
       const selectedBrand = brands.find(b => b.id === newProduct.brand_id);
-      
       const { error } = await supabase.from('products').insert([{
         ...newProduct, 
         brand: selectedBrand ? selectedBrand.name : null,
         price: isNaN(cleanPrice) ? 0 : cleanPrice, 
         slug: newProduct.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000)
       }]);
-      
       if (error) throw error;
       alert("Prodotto Caricato!");
       loadData();
@@ -123,22 +123,13 @@ export function AdminPage() {
         <form 
           onSubmit={(e) => { 
             e.preventDefault(); 
-            if (password === SECRET_PASSWORD) {
-              setIsAuthenticated(true);
-            } else {
-              alert("Password errata!");
-            }
+            if (password === SECRET_PASSWORD) setIsAuthenticated(true);
+            else alert("Password errata!");
           }} 
           className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100"
         >
           <Lock className="mx-auto text-rose-300 mb-6" size={40} />
-          <input 
-            type="password" 
-            placeholder="Password Segreta" 
-            className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none" 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
-          />
+          <input type="password" placeholder="Password Segreta" className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none" onChange={(e) => setPassword(e.target.value)} required />
           <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">Entra nel Pannello</button>
         </form>
       </div>
@@ -164,12 +155,7 @@ export function AdminPage() {
           {brands.map(b => (
             <div key={b.id} className="flex items-center gap-2 bg-rose-50 text-rose-500 px-4 py-2 rounded-full border border-rose-100 uppercase">
               <span className="text-[10px] font-bold tracking-widest">{b.name}</span>
-              <button 
-                onClick={() => handleDeleteBrand(b.id)}
-                className="hover:text-rose-700 transition-colors"
-              >
-                <X size={14} />
-              </button>
+              <button onClick={() => handleDeleteBrand(b.id)} className="hover:text-rose-700 transition-colors"><X size={14} /></button>
             </div>
           ))}
         </div>
@@ -180,11 +166,9 @@ export function AdminPage() {
         <h2 className="text-2xl font-serif italic mb-8 text-gray-800 tracking-tight">Pubblica Nuovo Articolo</h2>
         <form onSubmit={handleAddProduct} className="grid gap-6">
           <label className="border-2 border-dashed border-rose-200 h-48 rounded-[2.5rem] flex items-center justify-center cursor-pointer bg-rose-50/20 overflow-hidden shadow-inner hover:bg-rose-50/40 transition-all">
-            {newProduct.image_url ? 
-              <img src={newProduct.image_url} className="w-full h-full object-cover" alt="Anteprima" /> : 
+            {newProduct.image_url ? <img src={newProduct.image_url} className="w-full h-full object-cover" alt="Anteprima" /> : 
               <div className="text-rose-400 flex flex-col items-center gap-2">
-                <Upload size={32} />
-                <span className="font-bold text-xs uppercase tracking-widest">Carica Immagine</span>
+                <Upload size={32} /><span className="font-bold text-xs uppercase tracking-widest">Carica Immagine</span>
               </div>
             }
             <input type="file" className="hidden" onChange={handleImageUpload} />
@@ -205,11 +189,26 @@ export function AdminPage() {
         </form>
       </section>
 
-      {/* CATALOGO */}
+      {/* CATALOGO CON FILTRO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
-        <h2 className="text-2xl font-serif italic mb-8 text-gray-800 tracking-tight">Catalogo Attuale ({products.length})</h2>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <h2 className="text-2xl font-serif italic text-gray-800 tracking-tight">Catalogo Attuale ({filteredProducts.length})</h2>
+          
+          {/* BARRA DI RICERCA */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-300" size={18} />
+            <input 
+              type="text" 
+              placeholder="Cerca articolo..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-2xl bg-rose-50/50 border border-rose-100 outline-none focus:border-rose-300 transition-all text-sm"
+            />
+          </div>
+        </div>
+
         <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-          {products.map(p => (
+          {filteredProducts.map(p => (
             <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/30 transition-all shadow-sm">
               <div className="flex items-center gap-5">
                 <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-white shadow-md" alt={p.name} />
@@ -238,6 +237,9 @@ export function AdminPage() {
               </div>
             </div>
           ))}
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-10 text-gray-400 italic">Nessun articolo trovato per "{searchQuery}"</div>
+          )}
         </div>
       </section>
 
@@ -250,24 +252,15 @@ export function AdminPage() {
           {subscribers.map(s => (
             <div key={s.id} className="flex justify-between items-center p-6 bg-rose-50/20 rounded-[2.5rem] border border-rose-100 shadow-sm hover:shadow-md transition-all">
               <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => handleDeleteSubscriber(s.id)}
-                  className="text-rose-300 hover:text-rose-600 transition-colors p-1"
-                  title="Elimina contatto"
-                >
-                  <X size={20} />
+                <button onClick={() => handleDeleteSubscriber(s.id)} className="text-rose-300 hover:text-rose-600 transition-colors p-2 bg-white rounded-full border border-rose-50 shadow-sm">
+                  <X size={18}/>
                 </button>
                 <div>
                   <p className="font-bold text-gray-800 text-lg leading-tight">{s.name}</p>
                   <p className="text-sm text-gray-500 font-mono italic mt-1">{s.phone}</p>
                 </div>
               </div>
-              <a 
-                href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-all hover:rotate-12"
-              >
+              <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-all hover:rotate-12">
                 <MessageCircle size={24}/>
               </a>
             </div>
