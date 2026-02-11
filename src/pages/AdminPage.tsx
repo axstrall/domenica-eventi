@@ -22,8 +22,6 @@ export function AdminPage() {
     name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: ''
   });
 
-  // --- SICUREZZA MASSIMA ---
-  // Carichiamo la password dalle variabili d'ambiente (file .env o Vercel)
   const SECRET_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
   const loadData = async () => {
@@ -58,15 +56,34 @@ export function AdminPage() {
     } catch (err) { alert("Errore foto"); } finally { setIsUploading(false); }
   };
 
+  // --- NUOVA FUNZIONE PER ELIMINARE I MARCHI ---
+  const handleDeleteBrand = async (brandId: string) => {
+    if (window.confirm("Vuoi davvero eliminare questo marchio?")) {
+      try {
+        const { error } = await supabase.from('brands').delete().eq('id', brandId);
+        if (error) throw error;
+        loadData();
+      } catch (err: any) {
+        alert("Errore durante l'eliminazione: " + err.message);
+      }
+    }
+  };
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
+      
+      // Troviamo il nome del marchio selezionato per salvarlo anche come testo
+      const selectedBrand = brands.find(b => b.id === newProduct.brand_id);
+      
       const { error } = await supabase.from('products').insert([{
         ...newProduct, 
+        brand: selectedBrand ? selectedBrand.name : null, // Salviamo il nome nel campo brand
         price: isNaN(cleanPrice) ? 0 : cleanPrice, 
         slug: newProduct.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000)
       }]);
+      
       if (error) throw error;
       alert("Prodotto Caricato!");
       loadData();
@@ -134,7 +151,17 @@ export function AdminPage() {
           <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase shadow-md hover:bg-rose-500 transition-all"><PlusCircle /></button>
         </form>
         <div className="flex flex-wrap gap-2">
-          {brands.map(b => <span key={b.id} className="bg-rose-50 text-rose-500 px-4 py-2 rounded-full text-[10px] font-bold border border-rose-100 uppercase tracking-widest">{b.name}</span>)}
+          {brands.map(b => (
+            <div key={b.id} className="flex items-center gap-2 bg-rose-50 text-rose-500 px-4 py-2 rounded-full border border-rose-100 uppercase">
+              <span className="text-[10px] font-bold tracking-widest">{b.name}</span>
+              <button 
+                onClick={() => handleDeleteBrand(b.id)}
+                className="hover:text-rose-700 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
         </div>
       </section>
 
