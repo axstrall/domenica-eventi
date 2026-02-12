@@ -162,7 +162,7 @@ export function HomePage() {
           </div>
         ) : products.length > 0 && (
           <div className="pb-20">
-              <ProductGrid products={products} onRequestQuote={handleRequestQuote} title="Pezzi Unici in Evidenza" />
+              <ProductGrid products={products} onRequestQuote={handleRequestQuote} title="♡ Nuovi arrivi ♡" />
           </div>
         )}
       </main>
