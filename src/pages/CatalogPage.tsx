@@ -18,9 +18,10 @@ export function CatalogPage() {
     'Mathilde M', 'BRANDANI', 'Nuvole di Stoffa', 'Chez Moi Italia'
   ];
 
-  // Leggiamo categoria e marchio dall'URL
+  // Leggiamo categoria, marchio e RICERCA dall'URL
   const categorySlug = searchParams.get('category');
   const selectedBrand = searchParams.get('brand');
+  const searchQuery = searchParams.get('search'); // <-- NUOVO: legge la barra di ricerca
 
   useEffect(() => {
     async function fetchData() {
@@ -41,7 +42,6 @@ export function CatalogPage() {
     fetchData();
   }, []);
 
-  // FUNZIONE WHATSAPP DIRETTA (Numero: 3336980879)
   const handleRequestQuote = (product: Product) => {
     const mioNumero = "393336980879"; 
     const messaggio = encodeURIComponent(
@@ -54,6 +54,7 @@ export function CatalogPage() {
     const newParams: any = {};
     if (slug) newParams.category = slug;
     if (selectedBrand) newParams.brand = selectedBrand;
+    if (searchQuery) newParams.search = searchQuery; // Mantiene la ricerca
     setSearchParams(newParams);
   };
 
@@ -61,40 +62,69 @@ export function CatalogPage() {
     const newParams: any = {};
     if (brand) newParams.brand = brand;
     if (categorySlug) newParams.category = categorySlug;
+    if (searchQuery) newParams.search = searchQuery; // Mantiene la ricerca
     setSearchParams(newParams);
   };
 
-  // Filtraggio incrociato Marchio + Categoria
+  // --- FILTRAGGIO INCROCIATO: Ricerca + Marchio + Categoria ---
   const filteredProducts = products.filter(p => {
     let matchesCategory = true;
     let matchesBrand = true;
+    let matchesSearch = true;
 
+    // Filtro Categoria
     if (categorySlug) {
       const cat = categories.find(c => c.slug === categorySlug);
       matchesCategory = cat ? p.category_id === cat.id : true;
     }
 
+    // Filtro Marchio
     if (selectedBrand) {
-      // Nota: Filtriamo per la colonna brand del prodotto
       matchesBrand = p.brand === selectedBrand;
     }
 
-    return matchesCategory && matchesBrand;
+    // Filtro Ricerca Testuale (Nome o Descrizione)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      matchesSearch = p.name.toLowerCase().includes(query) || 
+                      (p.description && p.description.toLowerCase().includes(query));
+    }
+
+    return matchesCategory && matchesBrand && matchesSearch;
   });
 
-  const title = categories.find(c => c.slug === categorySlug)?.name || 
-                (selectedBrand ? `Collezione ${selectedBrand}` : "Il Nostro Catalogo");
+  const title = searchQuery ? `Risultati per: "${searchQuery}"` : 
+                (categories.find(c => c.slug === categorySlug)?.name || 
+                (selectedBrand ? `Collezione ${selectedBrand}` : "Il Nostro Catalogo"));
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col">
       <Header categories={categories} />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
-        <h1 className="text-4xl font-serif text-gray-800 mb-2 uppercase tracking-tight">{title}</h1>
-        <div className="h-1 w-20 bg-rose-300 mb-10"></div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+           <div>
+              <h1 className="text-4xl font-serif text-gray-800 uppercase tracking-tight">{title}</h1>
+              <div className="h-1 w-20 bg-rose-300"></div>
+           </div>
+           
+           {/* Bottone per pulire la ricerca se attiva */}
+           {searchQuery && (
+             <button 
+               onClick={() => {
+                 const newParams = new URLSearchParams(searchParams);
+                 newParams.delete('search');
+                 setSearchParams(newParams);
+               }}
+               className="text-xs bg-gray-100 hover:bg-rose-100 text-gray-500 px-4 py-2 rounded-full transition-all"
+             >
+               Cancella ricerca "X"
+             </button>
+           )}
+        </div>
 
         {/* --- SEZIONE FILTRI MARCHI --- */}
-        <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 mb-10 border border-rose-100/50">
+        <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 mt-8 mb-10 border border-rose-100/50">
           <p className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-4">Filtra per Marchio:</p>
           <div className="flex flex-wrap gap-4">
             <button
@@ -139,10 +169,24 @@ export function CatalogPage() {
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-rose-400"></div>
           </div>
         ) : (
-          <ProductGrid
-            products={filteredProducts}
-            onRequestQuote={handleRequestQuote}
-          />
+          <div>
+            {filteredProducts.length > 0 ? (
+              <ProductGrid
+                products={filteredProducts}
+                onRequestQuote={handleRequestQuote}
+              />
+            ) : (
+              <div className="text-center py-20 bg-white/20 rounded-3xl border border-dashed border-rose-200">
+                <p className="text-gray-500 italic text-lg">Nessun prodotto trovato con questi filtri.</p>
+                <button 
+                  onClick={() => setSearchParams({})} 
+                  className="mt-4 text-rose-400 font-bold underline"
+                >
+                  Mostra tutto il catalogo
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
