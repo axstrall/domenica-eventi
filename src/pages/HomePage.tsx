@@ -21,8 +21,8 @@ export function HomePage() {
   const navigate = useNavigate();
 
   const brands = [
-    'Hervit', 'Blanc Mariclò', 'Enzo de Gasperi', 
-    'Mathilde M', 'BRANDANI', 'Nuvole di Stoffa', 'Chez Moi Italia'
+    'Blanc Mariclò', 'Enzo de Gasperi', 'Fiori di Lena',
+   'BRANDANI', 'Mathilde M', 'Hervit', 'Nuvole di Stoffa', 'Chez Moi Italia'
   ];
 
   useEffect(() => {
