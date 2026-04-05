@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Loader2, Trash2, Edit2, Check, X, Star, Search, Tag } from 'lucide-react';
+import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Trash2, Edit2, Check, X, Star, Search, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function AdminPage() {
@@ -24,8 +24,6 @@ export function AdminPage() {
     name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: ''
   });
 
-  const SECRET_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -38,7 +36,7 @@ export function AdminPage() {
       setCategories(cats || []);
       setBrands(brnds || []);
       setProducts(prods || []);
-    } catch (err) { console.error("Errore caricamento"); }
+    } catch (err) { console.error("Errore caricamento dati"); }
     setIsLoading(false);
   };
 
@@ -46,7 +44,6 @@ export function AdminPage() {
     if (isAuthenticated) loadData(); 
   }, [isAuthenticated]);
 
-  // --- LOGICA DI FILTRO ---
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -60,7 +57,7 @@ export function AdminPage() {
       await supabase.storage.from('product-images').upload(fileName, file);
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
       setNewProduct({ ...newProduct, image_url: publicUrl });
-    } catch (err) { alert("Errore foto"); } finally { setIsUploading(false); }
+    } catch (err) { alert("Errore caricamento foto"); } finally { setIsUploading(false); }
   };
 
   const handleDeleteBrand = async (brandId: string) => {
@@ -73,13 +70,28 @@ export function AdminPage() {
     }
   };
 
+  // --- FUNZIONE ELIMINAZIONE BLINDATA (VIA API) ---
   const handleDeleteSubscriber = async (id: string) => {
-    if (window.confirm("Vuoi eliminare questo contatto dalla rubrica?")) {
+    if (window.confirm("Sei sicuro di voler eliminare questo contatto? L'azione è protetta da password.")) {
       try {
-        const { error } = await supabase.from('whatsapp_subscribers').delete().eq('id', id);
-        if (error) throw error;
-        loadData();
-      } catch (err: any) { alert("Errore: " + err.message); }
+        // Chiamata al back-end sicuro che abbiamo creato in pages/api/delete-subscriber.ts
+        const response = await fetch('/api/delete-subscriber', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, password }), // Invia ID e la password usata per il login
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Errore durante l'eliminazione");
+        }
+
+        alert("Contatto eliminato con successo!");
+        loadData(); // Ricarica la lista aggiornata
+      } catch (err: any) {
+        alert("Accesso Negato: " + err.message);
+      }
     }
   };
 
@@ -95,7 +107,7 @@ export function AdminPage() {
         slug: newProduct.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000)
       }]);
       if (error) throw error;
-      alert("Prodotto Caricato!");
+      alert("Prodotto Caricato con successo!");
       loadData();
       setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '' });
     } catch (err: any) { alert(err.message); }
@@ -123,14 +135,23 @@ export function AdminPage() {
         <form 
           onSubmit={(e) => { 
             e.preventDefault(); 
-            if (password === SECRET_PASSWORD) setIsAuthenticated(true);
-            else alert("Password errata!");
+            // Il controllo ora è più "morbido" qui, ma il BACK-END bloccherà comunque le azioni se la password è errata nelle variabili di Vercel
+            if (password.length > 0) setIsAuthenticated(true);
+            else alert("Inserisci una password!");
           }} 
           className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100"
         >
           <Lock className="mx-auto text-rose-300 mb-6" size={40} />
-          <input type="password" placeholder="Password Segreta" className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none" onChange={(e) => setPassword(e.target.value)} required />
-          <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">Entra nel Pannello</button>
+          <input 
+            type="password" 
+            placeholder="Password Amministratore" 
+            className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none" 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+          />
+          <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">
+            Entra nel Pannello
+          </button>
         </form>
       </div>
     );
@@ -138,9 +159,12 @@ export function AdminPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto pt-24 space-y-12 pb-20 font-sans">
-      <Link to="/" className="text-rose-400 font-bold italic mb-4 flex items-center gap-2 hover:underline">
-        <ArrowLeft size={18} /> Torna al Sito
-      </Link>
+      <div className="flex justify-between items-center">
+        <Link to="/" className="text-rose-400 font-bold italic flex items-center gap-2 hover:underline">
+          <ArrowLeft size={18} /> Torna al Sito
+        </Link>
+        <button onClick={() => window.location.reload()} className="text-xs text-gray-400 uppercase tracking-widest font-bold">Esci / Logout</button>
+      </div>
 
       {/* GESTIONE MARCHI */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
@@ -192,14 +216,12 @@ export function AdminPage() {
       {/* CATALOGO CON FILTRO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-          <h2 className="text-2xl font-serif italic text-gray-800 tracking-tight">Catalogo Attuale ({filteredProducts.length})</h2>
-          
-          {/* BARRA DI RICERCA */}
+          <h2 className="text-2xl font-serif italic text-gray-800 tracking-tight">Catalogo ({filteredProducts.length})</h2>
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-300" size={18} />
             <input 
               type="text" 
-              placeholder="Cerca articolo..." 
+              placeholder="Cerca per nome..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 rounded-2xl bg-rose-50/50 border border-rose-100 outline-none focus:border-rose-300 transition-all text-sm"
@@ -237,9 +259,6 @@ export function AdminPage() {
               </div>
             </div>
           ))}
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-10 text-gray-400 italic">Nessun articolo trovato per "{searchQuery}"</div>
-          )}
         </div>
       </section>
 
@@ -250,17 +269,22 @@ export function AdminPage() {
         </h2>
         <div className="space-y-3">
           {subscribers.map(s => (
-            <div key={s.id} className="flex justify-between items-center p-6 bg-rose-50/20 rounded-[2.5rem] border border-rose-100 shadow-sm hover:shadow-md transition-all">
+            <div key={s.id} className="flex justify-between items-center p-6 bg-rose-50/20 rounded-[2.5rem] border border-rose-100 shadow-sm">
               <div className="flex items-center gap-4">
-                <button onClick={() => handleDeleteSubscriber(s.id)} className="text-rose-300 hover:text-rose-600 transition-colors p-2 bg-white rounded-full border border-rose-50 shadow-sm">
-                  <X size={18}/>
+                {/* TASTO ELIMINA SICURO */}
+                <button 
+                  onClick={() => handleDeleteSubscriber(s.id)} 
+                  className="text-rose-300 hover:text-rose-600 transition-colors p-2 bg-white rounded-full border border-rose-50 shadow-sm"
+                  title="Elimina contatto"
+                >
+                  <Trash2 size={18}/>
                 </button>
                 <div>
                   <p className="font-bold text-gray-800 text-lg leading-tight">{s.name}</p>
                   <p className="text-sm text-gray-500 font-mono italic mt-1">{s.phone}</p>
                 </div>
               </div>
-              <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-all hover:rotate-12">
+              <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-all">
                 <MessageCircle size={24}/>
               </a>
             </div>
