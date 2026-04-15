@@ -1,4 +1,4 @@
-import { FileText } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import type { Product } from '../lib/database.types';
 
 interface ProductCardProps {
@@ -7,6 +7,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
+  // Verifichiamo se il prodotto ha uno sconto attivo
+  const hasDiscount = product.discount_price !== null && product.discount_price > 0;
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
       <div className="relative overflow-hidden aspect-square">
@@ -15,6 +18,12 @@ export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
+        {/* Etichetta Sconto */}
+        {hasDiscount && (
+          <span className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse">
+            SCONTO
+          </span>
+        )}
         {product.is_featured && (
           <span className="absolute top-3 right-3 bg-rose-400 text-white px-3 py-1 rounded-full text-xs font-medium">
             In evidenza
@@ -39,16 +48,31 @@ export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div>
-            <p className="text-xs text-gray-500">Prezzo indicativo</p>
-            <p className="text-2xl font-semibold text-gray-800">€{product.price.toFixed(2)}</p>
+            <p className="text-xs text-gray-500">Prezzo</p>
+            <div className="flex flex-col">
+              {hasDiscount ? (
+                <>
+                  <span className="text-2xl font-bold text-red-600">
+                    €{product.discount_price?.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-gray-400 line-through">
+                    €{product.price.toFixed(2)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-2xl font-semibold text-gray-800">
+                  €{product.price.toFixed(2)}
+                </span>
+              )}
+            </div>
           </div>
 
           <button
             onClick={() => onRequestQuote(product)}
-            className="bg-rose-400 hover:bg-rose-500 text-white px-6 py-2.5 rounded-full transition-colors duration-200 flex items-center space-x-2 font-medium"
+            className="bg-rose-400 hover:bg-rose-500 text-white px-5 py-2.5 rounded-full transition-colors duration-200 flex items-center space-x-2 font-bold shadow-sm"
           >
-            <FileText className="h-4 w-4" />
-            <span>Preventivo</span>
+            <MessageCircle className="h-4 w-4" />
+            <span>Contatta</span>
           </button>
         </div>
       </div>
