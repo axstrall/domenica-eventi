@@ -6,7 +6,7 @@ import { ProductGrid } from '../components/ProductGrid';
 import { Footer } from '../components/Footer';
 import { Testimonials } from '../components/Testimonials';
 import { supabase } from '../lib/supabase';
-import { Truck, Gift, MessageCircle, Star, ArrowRight, Phone } from 'lucide-react'; 
+import { Truck, Gift, MessageCircle, Star, ArrowRight, Phone, Percent } from 'lucide-react'; 
 import type { Product, Category } from '../lib/database.types';
 
 export function HomePage() {
@@ -67,11 +67,10 @@ export function HomePage() {
     }
   };
 
-  // FUNZIONE WHATSAPP CON IL TUO NUMERO CORRETTO
   const handleRequestQuote = (product: Product) => {
     const mioNumero = "3336980879"; 
     const messaggio = encodeURIComponent(
-      `Ciao Domenica! 👋 Desidero ricevere informazioni sul prodotto: "${product.name}" (Prezzo: €${product.price}). Mi potresti aiutare?`
+      `Ciao Domenica! 👋 Desidero ricevere informazioni sul prodotto: "${product.name}" (Prezzo: €${product.discount_price || product.price}). Mi potresti aiutare?`
     );
     window.open(`https://wa.me/${mioNumero}?text=${messaggio}`, '_blank');
   };
@@ -85,6 +84,7 @@ export function HomePage() {
       <Header categories={categories} />
       <Hero />
 
+      {/* SEZIONE MARCHI */}
       <section className="py-12 bg-white/30 backdrop-blur-sm border-y border-rose-100/50">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-center text-rose-400 font-serif italic mb-8 tracking-[0.2em] uppercase text-sm font-bold">
@@ -104,6 +104,7 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* CARATTERISTICHE */}
       <section className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {[
@@ -122,15 +123,39 @@ export function HomePage() {
       </section>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {!isLoading && categories.length > 0 && (
+        {!isLoading && (
           <section className="py-16">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-serif text-gray-800 italic">Le Nostre Collezioni</h2>
               <div className="h-0.5 w-24 bg-rose-300 mx-auto mt-4"></div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {categories.slice(0, 4).map((category) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* NUOVO RIQUADRO SCONTI */}
+              <Link 
+                to="/catalog?category=sconti"
+                className="group relative h-96 overflow-hidden rounded-2xl bg-rose-50 shadow-md transition-all duration-500 hover:-translate-y-3 block border-2 border-rose-200"
+              >
+                <div className="absolute top-4 right-4 z-20 bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm animate-pulse shadow-lg flex items-center gap-2">
+                  <Percent size={16} /> SPECIAL OFFERS
+                </div>
+                <img 
+                  src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80" 
+                  alt="Sconti e Offerte"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-rose-900/90 via-rose-900/20 to-transparent flex items-end p-8">
+                  <div>
+                    <h3 className="text-white text-3xl font-serif mb-2">Sconti & Offerte</h3>
+                    <p className="text-rose-200 text-sm flex items-center">
+                      Occasioni da non perdere <ArrowRight size={16} className="ml-2" />
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              {/* ALTRE CATEGORIE DINAMICHE */}
+              {categories.slice(0, 2).map((category) => (
                 <Link 
                   key={category.id}
                   to={`/catalog?category=${category.slug}`}
@@ -167,6 +192,7 @@ export function HomePage() {
         )}
       </main>
 
+      {/* SEZIONE ATELIER */}
       <section className="py-24 bg-white/40 backdrop-blur-md border-y border-rose-100/50">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <div className="relative">
@@ -177,19 +203,20 @@ export function HomePage() {
           <div className="space-y-8">
             <h2 className="text-5xl font-serif text-gray-800 italic leading-tight">L'Arte del Ricevere <br/> con Stile</h2>
             <div className="h-1 w-24 bg-rose-300"></div>
-            <p className="text-gray-600 italic text-xl">"Ogni evento è una storia unica. Trasformiamo i vostri desideri in dettagli indimenticabili."</p>
+            <p className="text-gray-600 italic text-xl">"Ogni evento è una story unica. Trasformiamo i vostri desideri in dettagli indimenticabili."</p>
             <p className="text-gray-500 text-lg">Portiamo nelle vostre cerimonie l'eccellenza dei migliori marchi internazionali.</p>
           </div>
         </div>
       </section>
 
+      {/* WHATSAPP NEWSLETTER */}
       <section className="py-24 px-4">
         <div className="max-w-5xl mx-auto bg-slate-900 rounded-[4rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl">
           <div className="relative z-10">
             <Phone className="text-rose-400 mx-auto mb-6" size={48} />
             <h2 className="text-4xl font-serif text-white mb-6 italic">Novità su WhatsApp</h2>
             <p className="text-slate-300 mb-10 text-lg max-w-2xl mx-auto font-light">
-              Lascia il tuo numero per ricevere in anteprima le foto dei nuovi arrivi direttamente sul tuo smartphone.
+              Lascia il tuo numero per ricevere in anteprima le foto dei nuovi arrivi e le **offerte esclusive** direttamente sul tuo smartphone.
             </p>
             <form className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto" onSubmit={handleWhatsappSubmit}>
               <input 
