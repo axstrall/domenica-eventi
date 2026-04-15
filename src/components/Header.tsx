@@ -79,7 +79,7 @@ export default function Header() {
               rel="noopener noreferrer"
               className="bg-rose-400 text-white px-6 py-3 rounded-full font-bold hover:bg-rose-500 shadow-lg transition-all hover:-translate-y-1 text-xs uppercase tracking-widest"
             >
-              CONTATTA
+              CONTATTACI
             </a>
           </div>
 
@@ -130,7 +130,7 @@ export default function Header() {
                 className="flex items-center justify-center w-full py-5 text-white bg-rose-400 rounded-2xl font-bold uppercase tracking-widest shadow-xl"
               >
                 <Send size={20} className="mr-3" />
-                CONTATTA
+                CONTATTACI
               </a>
             </div>
           </div>
