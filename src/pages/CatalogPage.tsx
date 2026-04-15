@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import { ProductGrid } from '../components/ProductGrid';
 import { Footer } from '../components/Footer';
 import { supabase } from '../lib/supabase';
+import { Percent } from 'lucide-react'; // Importiamo l'icona per gli sconti
 import type { Product, Category } from '../lib/database.types';
 
 export function CatalogPage() {
@@ -21,7 +22,7 @@ export function CatalogPage() {
   // Leggiamo categoria, marchio e RICERCA dall'URL
   const categorySlug = searchParams.get('category');
   const selectedBrand = searchParams.get('brand');
-  const searchQuery = searchParams.get('search'); // <-- NUOVO: legge la barra di ricerca
+  const searchQuery = searchParams.get('search');
 
   useEffect(() => {
     async function fetchData() {
@@ -44,8 +45,10 @@ export function CatalogPage() {
 
   const handleRequestQuote = (product: Product) => {
     const mioNumero = "393336980879"; 
+    // Usa il prezzo scontato nel messaggio se esiste
+    const prezzoFinale = product.discount_price || product.price;
     const messaggio = encodeURIComponent(
-      `Ciao Domenica! 👋 Ho visto nel catalogo questo articolo: "${product.name}" (Prezzo: €${product.price}). Vorrei avere maggiori informazioni, grazie!`
+      `Ciao Domenica! 👋 Ho visto nel catalogo questo articolo: "${product.name}" (Prezzo: €${prezzoFinale}). Vorrei avere maggiori informazioni, grazie!`
     );
     window.open(`https://wa.me/${mioNumero}?text=${messaggio}`, '_blank');
   };
@@ -54,7 +57,7 @@ export function CatalogPage() {
     const newParams: any = {};
     if (slug) newParams.category = slug;
     if (selectedBrand) newParams.brand = selectedBrand;
-    if (searchQuery) newParams.search = searchQuery; // Mantiene la ricerca
+    if (searchQuery) newParams.search = searchQuery;
     setSearchParams(newParams);
   };
 
@@ -62,20 +65,25 @@ export function CatalogPage() {
     const newParams: any = {};
     if (brand) newParams.brand = brand;
     if (categorySlug) newParams.category = categorySlug;
-    if (searchQuery) newParams.search = searchQuery; // Mantiene la ricerca
+    if (searchQuery) newParams.search = searchQuery;
     setSearchParams(newParams);
   };
 
-  // --- FILTRAGGIO INCROCIATO: Ricerca + Marchio + Categoria ---
+  // --- FILTRAGGIO INCROCIATO AGGIORNATO CON LOGICA SCONTI ---
   const filteredProducts = products.filter(p => {
     let matchesCategory = true;
     let matchesBrand = true;
     let matchesSearch = true;
 
-    // Filtro Categoria
+    // Filtro Categoria + Logica speciale per categoria "sconti"
     if (categorySlug) {
-      const cat = categories.find(c => c.slug === categorySlug);
-      matchesCategory = cat ? p.category_id === cat.id : true;
+      if (categorySlug === 'sconti') {
+        // Se la categoria è 'sconti', mostra solo i prodotti con discount_price impostato
+        matchesCategory = p.discount_price !== null && p.discount_price > 0;
+      } else {
+        const cat = categories.find(c => c.slug === categorySlug);
+        matchesCategory = cat ? p.category_id === cat.id : true;
+      }
     }
 
     // Filtro Marchio
@@ -83,7 +91,7 @@ export function CatalogPage() {
       matchesBrand = p.brand === selectedBrand;
     }
 
-    // Filtro Ricerca Testuale (Nome o Descrizione)
+    // Filtro Ricerca Testuale
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       matchesSearch = p.name.toLowerCase().includes(query) || 
@@ -94,8 +102,9 @@ export function CatalogPage() {
   });
 
   const title = searchQuery ? `Risultati per: "${searchQuery}"` : 
+                (categorySlug === 'sconti' ? "Offerte & Sconti" :
                 (categories.find(c => c.slug === categorySlug)?.name || 
-                (selectedBrand ? `Collezione ${selectedBrand}` : "Il Nostro Catalogo"));
+                (selectedBrand ? `Collezione ${selectedBrand}` : "Il Nostro Catalogo")));
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col">
@@ -103,24 +112,23 @@ export function CatalogPage() {
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-           <div>
-              <h1 className="text-4xl font-serif text-gray-800 uppercase tracking-tight">{title}</h1>
-              <div className="h-1 w-20 bg-rose-300"></div>
-           </div>
-           
-           {/* Bottone per pulire la ricerca se attiva */}
-           {searchQuery && (
-             <button 
-               onClick={() => {
-                 const newParams = new URLSearchParams(searchParams);
-                 newParams.delete('search');
-                 setSearchParams(newParams);
-               }}
-               className="text-xs bg-gray-100 hover:bg-rose-100 text-gray-500 px-4 py-2 rounded-full transition-all"
-             >
-               Cancella ricerca "X"
-             </button>
-           )}
+            <div>
+               <h1 className="text-4xl font-serif text-gray-800 uppercase tracking-tight">{title}</h1>
+               <div className="h-1 w-20 bg-rose-300"></div>
+            </div>
+            
+            {searchQuery && (
+              <button 
+                onClick={() => {
+                  const newParams = new URLSearchParams(searchParams);
+                  newParams.delete('search');
+                  setSearchParams(newParams);
+                }}
+                className="text-xs bg-gray-100 hover:bg-rose-100 text-gray-500 px-4 py-2 rounded-full transition-all"
+              >
+                Cancella ricerca "X"
+              </button>
+            )}
         </div>
 
         {/* --- SEZIONE FILTRI MARCHI --- */}
@@ -145,7 +153,7 @@ export function CatalogPage() {
           </div>
         </div>
 
-        {/* --- FILTRI CATEGORIE --- */}
+        {/* --- FILTRI CATEGORIE AGGIORNATI CON TASTO SCONTI --- */}
         <div className="flex flex-wrap gap-2 mb-10">
           <button
             onClick={() => handleCategoryChange(null)}
@@ -153,6 +161,15 @@ export function CatalogPage() {
           >
             Tutte le Categorie
           </button>
+
+          {/* NUOVO TASTO IN SCONTO */}
+          <button
+            onClick={() => handleCategoryChange('sconti')}
+            className={`px-5 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${categorySlug === 'sconti' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-red-200 text-red-500 hover:bg-red-50'}`}
+          >
+            <Percent size={14} /> IN SCONTO
+          </button>
+
           {categories.map((cat) => (
             <button
               key={cat.id}
