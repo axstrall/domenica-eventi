@@ -197,7 +197,7 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <div className="relative">
             <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl border-[12px] border-white">
-              <img src="/atelier.jpg" alt="L'Atelier" className="w-full h-full object-cover" />
+              <img src="/images/atelier.jpeg" alt="L'Atelier" className="w-full h-full object-cover" />
             </div>
           </div>
           <div className="space-y-8">
