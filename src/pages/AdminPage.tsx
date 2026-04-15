@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Trash2, Edit2, Check, X, Star, Search, Tag } from 'lucide-react';
+import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Trash2, Edit2, Check, X, Star, Search, Tag, Percent } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function AdminPage() {
@@ -13,15 +13,16 @@ export function AdminPage() {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // --- STATO PER IL FILTRO DI RICERCA ---
   const [searchQuery, setSearchQuery] = useState('');
-  
   const [newBrandName, setNewBrandName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', price: '', brand_id: '' });
+  
+  // EditForm aggiornato con discount_price
+  const [editForm, setEditForm] = useState({ name: '', price: '', discount_price: '', brand_id: '' });
 
+  // NewProduct aggiornato con discount_price
   const [newProduct, setNewProduct] = useState({
-    name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: ''
+    name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '', discount_price: ''
   });
 
   const loadData = async () => {
@@ -70,28 +71,19 @@ export function AdminPage() {
     }
   };
 
-  // --- FUNZIONE ELIMINAZIONE BLINDATA (VIA API) ---
   const handleDeleteSubscriber = async (id: string) => {
-    if (window.confirm("Sei sicuro di voler eliminare questo contatto? L'azione è protetta da password.")) {
+    if (window.confirm("Sei sicuro di voler eliminare questo contatto?")) {
       try {
-        // Chiamata al back-end sicuro che abbiamo creato in pages/api/delete-subscriber.ts
         const response = await fetch('/api/delete-subscriber', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, password }), // Invia ID e la password usata per il login
+          body: JSON.stringify({ id, password }),
         });
-
         const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || "Errore durante l'eliminazione");
-        }
-
-        alert("Contatto eliminato con successo!");
-        loadData(); // Ricarica la lista aggiornata
-      } catch (err: any) {
-        alert("Accesso Negato: " + err.message);
-      }
+        if (!response.ok) throw new Error(result.error || "Errore");
+        alert("Contatto eliminato!");
+        loadData();
+      } catch (err: any) { alert("Errore: " + err.message); }
     }
   };
 
@@ -99,17 +91,22 @@ export function AdminPage() {
     e.preventDefault();
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
+      const cleanDiscount = newProduct.discount_price ? parseFloat(newProduct.discount_price.toString().replace(',', '.')) : null;
+      
       const selectedBrand = brands.find(b => b.id === newProduct.brand_id);
+      
       const { error } = await supabase.from('products').insert([{
         ...newProduct, 
         brand: selectedBrand ? selectedBrand.name : null,
-        price: isNaN(cleanPrice) ? 0 : cleanPrice, 
+        price: isNaN(cleanPrice) ? 0 : cleanPrice,
+        discount_price: cleanDiscount,
         slug: newProduct.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000)
       }]);
+      
       if (error) throw error;
-      alert("Prodotto Caricato con successo!");
+      alert("Prodotto Caricato!");
       loadData();
-      setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '' });
+      setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '', discount_price: '' });
     } catch (err: any) { alert(err.message); }
   };
 
@@ -120,9 +117,12 @@ export function AdminPage() {
 
   const saveEdit = async (id: string) => {
     const cleanPrice = parseFloat(editForm.price.replace(',', '.'));
+    const cleanDiscount = editForm.discount_price ? parseFloat(editForm.discount_price.replace(',', '.')) : null;
+
     const { error } = await supabase.from('products').update({
       name: editForm.name,
       price: isNaN(cleanPrice) ? 0 : cleanPrice,
+      discount_price: cleanDiscount,
       brand_id: editForm.brand_id || null
     }).eq('id', id);
     if (!error) { setEditingId(null); loadData(); }
@@ -132,26 +132,10 @@ export function AdminPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50/50 p-6 font-sans">
         <h1 className="text-4xl font-serif text-rose-400 italic mb-8 uppercase text-center tracking-tighter">Domenica Admin</h1>
-        <form 
-          onSubmit={(e) => { 
-            e.preventDefault(); 
-            // Il controllo ora è più "morbido" qui, ma il BACK-END bloccherà comunque le azioni se la password è errata nelle variabili di Vercel
-            if (password.length > 0) setIsAuthenticated(true);
-            else alert("Inserisci una password!");
-          }} 
-          className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100"
-        >
+        <form onSubmit={(e) => { e.preventDefault(); if (password.length > 0) setIsAuthenticated(true); else alert("Password!"); }} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100">
           <Lock className="mx-auto text-rose-300 mb-6" size={40} />
-          <input 
-            type="password" 
-            placeholder="Password Amministratore" 
-            className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none" 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
-          />
-          <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">
-            Entra nel Pannello
-          </button>
+          <input type="password" placeholder="Password Amministratore" className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none" onChange={(e) => setPassword(e.target.value)} required />
+          <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">Entra nel Pannello</button>
         </form>
       </div>
     );
@@ -163,99 +147,109 @@ export function AdminPage() {
         <Link to="/" className="text-rose-400 font-bold italic flex items-center gap-2 hover:underline">
           <ArrowLeft size={18} /> Torna al Sito
         </Link>
-        <button onClick={() => window.location.reload()} className="text-xs text-gray-400 uppercase tracking-widest font-bold">Esci / Logout</button>
+        <button onClick={() => window.location.reload()} className="text-xs text-gray-400 uppercase tracking-widest font-bold">Esci</button>
       </div>
 
       {/* GESTIONE MARCHI */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
-        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight">
-          <Tag className="text-rose-400"/> Marchi Trattati
-        </h2>
+        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight"><Tag className="text-rose-400"/> Marchi</h2>
         <form onSubmit={async (e) => { e.preventDefault(); await supabase.from('brands').insert([{ name: newBrandName }]); setNewBrandName(''); loadData(); }} className="flex gap-4 mb-6">
-          <input type="text" placeholder="Aggiungi Marchio..." className="flex-1 border p-4 rounded-2xl outline-none shadow-sm focus:border-rose-300 transition-all" value={newBrandName} onChange={e => setNewBrandName(e.target.value)} />
-          <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase shadow-md hover:bg-rose-500 transition-all"><PlusCircle /></button>
+          <input type="text" placeholder="Aggiungi Marchio..." className="flex-1 border p-4 rounded-2xl outline-none" value={newBrandName} onChange={e => setNewBrandName(e.target.value)} />
+          <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase"><PlusCircle /></button>
         </form>
         <div className="flex flex-wrap gap-2">
           {brands.map(b => (
             <div key={b.id} className="flex items-center gap-2 bg-rose-50 text-rose-500 px-4 py-2 rounded-full border border-rose-100 uppercase">
               <span className="text-[10px] font-bold tracking-widest">{b.name}</span>
-              <button onClick={() => handleDeleteBrand(b.id)} className="hover:text-rose-700 transition-colors"><X size={14} /></button>
+              <button onClick={() => handleDeleteBrand(b.id)}><X size={14} /></button>
             </div>
           ))}
         </div>
       </section>
 
-      {/* NUOVO ARTICOLO */}
+      {/* PUBBLICA NUOVO ARTICOLO (AGGIORNATO CON SCONTO) */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-8 text-gray-800 tracking-tight">Pubblica Nuovo Articolo</h2>
         <form onSubmit={handleAddProduct} className="grid gap-6">
-          <label className="border-2 border-dashed border-rose-200 h-48 rounded-[2.5rem] flex items-center justify-center cursor-pointer bg-rose-50/20 overflow-hidden shadow-inner hover:bg-rose-50/40 transition-all">
+          <label className="border-2 border-dashed border-rose-200 h-48 rounded-[2.5rem] flex items-center justify-center cursor-pointer bg-rose-50/20 overflow-hidden shadow-inner">
             {newProduct.image_url ? <img src={newProduct.image_url} className="w-full h-full object-cover" alt="Anteprima" /> : 
-              <div className="text-rose-400 flex flex-col items-center gap-2">
-                <Upload size={32} /><span className="font-bold text-xs uppercase tracking-widest">Carica Immagine</span>
-              </div>
+              <div className="text-rose-400 flex flex-col items-center gap-2"><Upload size={32} /><span className="font-bold text-xs uppercase tracking-widest">Carica Immagine</span></div>
             }
             <input type="file" className="hidden" onChange={handleImageUpload} />
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" placeholder="Nome Articolo" className="border p-4 rounded-2xl outline-none shadow-sm focus:border-rose-300" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} required />
-            <input type="text" placeholder="Prezzo (€)" className="border p-4 rounded-2xl outline-none shadow-sm focus:border-rose-300" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
-            <select className="border p-4 rounded-2xl outline-none bg-white shadow-sm" value={newProduct.brand_id} onChange={e => setNewProduct({...newProduct, brand_id: e.target.value})}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <input type="text" placeholder="Nome Articolo" className="border p-4 rounded-2xl outline-none" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} required />
+            <input type="text" placeholder="Prezzo Pieno (€)" className="border p-4 rounded-2xl outline-none" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
+            
+            {/* NUOVO CAMPO SCONTO */}
+            <div className="relative">
+              <Percent className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400" size={18} />
+              <input type="text" placeholder="Prezzo Scontato (€)" className="w-full border p-4 rounded-2xl outline-none border-red-100 bg-red-50/30 focus:border-red-300" value={newProduct.discount_price} onChange={e => setNewProduct({...newProduct, discount_price: e.target.value})} />
+            </div>
+
+            <select className="border p-4 rounded-2xl outline-none bg-white" value={newProduct.brand_id} onChange={e => setNewProduct({...newProduct, brand_id: e.target.value})}>
               <option value="">Seleziona Marchio...</option>
               {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
-            <select className="border p-4 rounded-2xl outline-none bg-white shadow-sm" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
+            <select className="border p-4 rounded-2xl outline-none bg-white lg:col-span-2" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})} required>
               <option value="">Seleziona Categoria...</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <button className="bg-slate-900 text-white p-5 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all tracking-widest text-xs">Aggiungi al Catalogo</button>
+          <button className="bg-slate-900 text-white p-5 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-rose-500">Aggiungi al Catalogo</button>
         </form>
       </section>
 
-      {/* CATALOGO CON FILTRO */}
+      {/* CATALOGO CON GESTIONE SCONTI RAPIDA */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <h2 className="text-2xl font-serif italic text-gray-800 tracking-tight">Catalogo ({filteredProducts.length})</h2>
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-rose-300" size={18} />
-            <input 
-              type="text" 
-              placeholder="Cerca per nome..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-2xl bg-rose-50/50 border border-rose-100 outline-none focus:border-rose-300 transition-all text-sm"
-            />
+            <input type="text" placeholder="Cerca per nome..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-2xl bg-rose-50/50 border border-rose-100 outline-none text-sm" />
           </div>
         </div>
 
         <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           {filteredProducts.map(p => (
-            <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/30 transition-all shadow-sm">
+            <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100">
               <div className="flex items-center gap-5">
-                <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-white shadow-md" alt={p.name} />
+                <div className="relative">
+                  <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-white shadow-md" alt={p.name} />
+                  {p.discount_price && <div className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><Percent size={12}/></div>}
+                </div>
                 {editingId === p.id ? (
                   <div className="flex flex-col gap-2">
-                    <input className="border px-4 py-1 rounded-xl text-sm outline-none" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-                    <input className="border px-4 py-1 rounded-xl text-sm w-24 outline-none" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
+                    <input className="border px-4 py-1 rounded-xl text-sm" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                    <div className="flex gap-2">
+                      <input placeholder="Pieno" className="border px-4 py-1 rounded-xl text-sm w-20" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
+                      <input placeholder="Sconto" className="border px-4 py-1 rounded-xl text-sm w-20 bg-red-50 border-red-200" value={editForm.discount_price} onChange={e => setEditForm({...editForm, discount_price: e.target.value})} />
+                    </div>
                   </div>
                 ) : (
                   <div>
                     <p className="font-bold text-gray-800 leading-tight">{p.name}</p>
-                    <p className="text-xs text-rose-400 font-bold uppercase mt-1">€{p.price}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {p.discount_price ? (
+                        <>
+                          <p className="text-xs text-red-500 font-bold uppercase">€{p.discount_price}</p>
+                          <p className="text-[10px] text-gray-400 line-through font-bold uppercase">€{p.price}</p>
+                        </>
+                      ) : <p className="text-xs text-rose-400 font-bold uppercase">€{p.price}</p>}
+                    </div>
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-3 rounded-full transition-all ${p.is_featured ? 'text-yellow-500 bg-yellow-50 shadow-inner' : 'text-gray-300 bg-white shadow-sm'}`}>
+                <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-3 rounded-full ${p.is_featured ? 'text-yellow-500 bg-yellow-50' : 'text-gray-300 bg-white'}`}>
                   <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
                 </button>
                 {editingId === p.id ? (
-                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full shadow-md"><Check size={20}/></button>
+                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full"><Check size={20}/></button>
                 ) : (
-                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), brand_id: p.brand_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm"><Edit2 size={20}/></button>
+                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), discount_price: p.discount_price?.toString() || '', brand_id: p.brand_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm"><Edit2 size={20}/></button>
                 )}
-                <button onClick={async () => { if(confirm("Eliminare definitivamente?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-3 rounded-full border border-rose-50 shadow-sm"><Trash2 size={20}/></button>
+                <button onClick={async () => { if(confirm("Eliminare?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-3 rounded-full border border-rose-50 shadow-sm"><Trash2 size={20}/></button>
               </div>
             </div>
           ))}
@@ -264,29 +258,18 @@ export function AdminPage() {
 
       {/* RUBRICA CLIENTI */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
-        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight">
-          <Database className="text-rose-400"/> Rubrica Clienti ({subscribers.length})
-        </h2>
+        <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight"><Database className="text-rose-400"/> Rubrica ({subscribers.length})</h2>
         <div className="space-y-3">
           {subscribers.map(s => (
             <div key={s.id} className="flex justify-between items-center p-6 bg-rose-50/20 rounded-[2.5rem] border border-rose-100 shadow-sm">
               <div className="flex items-center gap-4">
-                {/* TASTO ELIMINA SICURO */}
-                <button 
-                  onClick={() => handleDeleteSubscriber(s.id)} 
-                  className="text-rose-300 hover:text-rose-600 transition-colors p-2 bg-white rounded-full border border-rose-50 shadow-sm"
-                  title="Elimina contatto"
-                >
-                  <Trash2 size={18}/>
-                </button>
+                <button onClick={() => handleDeleteSubscriber(s.id)} className="text-rose-300 hover:text-rose-600 p-2 bg-white rounded-full border border-rose-50 shadow-sm"><Trash2 size={18}/></button>
                 <div>
                   <p className="font-bold text-gray-800 text-lg leading-tight">{s.name}</p>
                   <p className="text-sm text-gray-500 font-mono italic mt-1">{s.phone}</p>
                 </div>
               </div>
-              <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-all">
-                <MessageCircle size={24}/>
-              </a>
+              <a href={`https://wa.me/${s.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 text-white p-4 rounded-full shadow-lg"><MessageCircle size={24}/></a>
             </div>
           ))}
         </div>
