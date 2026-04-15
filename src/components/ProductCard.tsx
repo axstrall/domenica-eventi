@@ -87,7 +87,7 @@ export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
               className="bg-rose-400 hover:bg-rose-500 text-white px-5 py-2.5 rounded-full transition-colors duration-200 flex items-center space-x-2 font-bold shadow-sm"
             >
               <MessageCircle className="h-4 w-4" />
-              <span>Contatta</span>
+              <span>Contattaci</span>
             </button>
           </div>
         </div>
