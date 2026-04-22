@@ -4,8 +4,8 @@ import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Trash2, E
 import { Link } from 'react-router-dom';
 
 export function AdminPage() {
-  // IMPOSTA QUI LA TUA PASSWORD REALE
-  const PASSWORD_CORRETTA = "Domenica2026!"; 
+  // --- SICUREZZA: RECUPERO PASSWORD DAL FILE .ENV ---
+  const PASSWORD_CORRETTA = import.meta.env.VITE_ADMIN_PASSWORD;
 
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -139,7 +139,7 @@ export function AdminPage() {
             if (password === PASSWORD_CORRETTA) {
               setIsAuthenticated(true); 
             } else {
-              alert("Password Errata! Accesso negato.");
+              alert("Accesso Negato! Password non corretta.");
             }
           }} 
           className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100"
@@ -148,7 +148,7 @@ export function AdminPage() {
           <input 
             type="password" 
             placeholder="Password Amministratore" 
-            className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none focus:border-rose-300" 
+            className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none focus:border-rose-300 transition-all" 
             onChange={(e) => setPassword(e.target.value)} 
             required 
           />
@@ -169,18 +169,18 @@ export function AdminPage() {
         <button onClick={() => window.location.reload()} className="text-xs text-gray-400 uppercase tracking-widest font-bold">Esci</button>
       </div>
 
-      {/* GESTIONE MARCHI */}
+      {/* SEZIONE MARCHI */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight"><Tag className="text-rose-400"/> Marchi</h2>
         <form onSubmit={async (e) => { e.preventDefault(); await supabase.from('brands').insert([{ name: newBrandName }]); setNewBrandName(''); loadData(); }} className="flex gap-4 mb-6">
-          <input type="text" placeholder="Aggiungi Marchio..." className="flex-1 border p-4 rounded-2xl outline-none" value={newBrandName} onChange={e => setNewBrandName(e.target.value)} />
-          <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase"><PlusCircle /></button>
+          <input type="text" placeholder="Aggiungi Marchio..." className="flex-1 border p-4 rounded-2xl outline-none shadow-sm focus:border-rose-300" value={newBrandName} onChange={e => setNewBrandName(e.target.value)} />
+          <button className="bg-rose-400 text-white px-6 rounded-2xl font-bold uppercase hover:bg-rose-500 transition-all shadow-md"><PlusCircle /></button>
         </form>
         <div className="flex flex-wrap gap-2">
           {brands.map(b => (
             <div key={b.id} className="flex items-center gap-2 bg-rose-50 text-rose-500 px-4 py-2 rounded-full border border-rose-100 uppercase">
               <span className="text-[10px] font-bold tracking-widest">{b.name}</span>
-              <button onClick={() => handleDeleteBrand(b.id)}><X size={14} /></button>
+              <button onClick={() => handleDeleteBrand(b.id)} className="hover:text-rose-700 transition-colors"><X size={14} /></button>
             </div>
           ))}
         </div>
@@ -230,7 +230,7 @@ export function AdminPage() {
 
         <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           {filteredProducts.map(p => (
-            <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/30 transition-all">
+            <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/30 transition-all shadow-sm">
               <div className="flex items-center gap-5">
                 <div className="relative">
                   <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-white shadow-md" alt={p.name} />
@@ -263,11 +263,11 @@ export function AdminPage() {
                   <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
                 </button>
                 {editingId === p.id ? (
-                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full shadow-md"><Check size={20}/></button>
+                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full shadow-md hover:bg-green-600"><Check size={20}/></button>
                 ) : (
-                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), discount_price: p.discount_price?.toString() || '', brand_id: p.brand_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm hover:bg-blue-50"><Edit2 size={20}/></button>
+                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), discount_price: p.discount_price?.toString() || '', brand_id: p.brand_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm hover:bg-blue-50 transition-all"><Edit2 size={20}/></button>
                 )}
-                <button onClick={async () => { if(confirm("Eliminare?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-3 rounded-full border border-rose-50 shadow-sm hover:bg-rose-50"><Trash2 size={20}/></button>
+                <button onClick={async () => { if(confirm("Eliminare definitivamente?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-3 rounded-full border border-rose-50 shadow-sm hover:bg-rose-50 transition-all"><Trash2 size={20}/></button>
               </div>
             </div>
           ))}
@@ -279,7 +279,7 @@ export function AdminPage() {
         <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight"><Database className="text-rose-400"/> Rubrica ({subscribers.length})</h2>
         <div className="space-y-3">
           {subscribers.map(s => (
-            <div key={s.id} className="flex justify-between items-center p-6 bg-rose-50/20 rounded-[2.5rem] border border-rose-100 shadow-sm">
+            <div key={s.id} className="flex justify-between items-center p-6 bg-rose-50/20 rounded-[2.5rem] border border-rose-100 shadow-sm hover:bg-rose-50/40 transition-all">
               <div className="flex items-center gap-4">
                 <button onClick={() => handleDeleteSubscriber(s.id)} className="text-rose-300 hover:text-rose-600 p-2 bg-white rounded-full border border-rose-50 shadow-sm transition-all"><Trash2 size={18}/></button>
                 <div>
