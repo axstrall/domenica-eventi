@@ -136,6 +136,11 @@ export function AdminPage() {
         <form 
           onSubmit={(e) => { 
             e.preventDefault(); 
+            // CONTROLLO DI SICUREZZA BLOCCANTE
+            if (!PASSWORD_CORRETTA) {
+                alert("Errore critico: Password non configurata nel sistema. Controlla il file .env");
+                return;
+            }
             if (password === PASSWORD_CORRETTA) {
               setIsAuthenticated(true); 
             } else {
