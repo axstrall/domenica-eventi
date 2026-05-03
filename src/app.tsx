@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { CatalogPage } from './pages/CatalogPage';
-import { AdminPage } from './pages/AdminPage'; // AGGIUNTO: Import della pagina admin
+import { AdminPage } from './pages/AdminPage'; 
 
 function App() {
   return (
@@ -24,7 +24,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           {/* AGGIUNTO: Percorso per la tua rubrica WhatsApp */}
-          <Route path="/admin" element={<AdminPage />} /> 
+          <Route path="/chiave-segreta-123" element={<AdminPage />} />
         </Routes>
       </div>
     </Router>
