@@ -24,7 +24,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           {/* AGGIUNTO: Percorso per la tua rubrica WhatsApp */}
-          <Route path="/chiave-segreta-123" element={<AdminPage />} />
+          <Route path="/@@@@@@@@" element={<AdminPage />} />
         </Routes>
       </div>
     </Router>
