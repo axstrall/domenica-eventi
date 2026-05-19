@@ -183,7 +183,7 @@ export function AdminPage() {
           />
           <input 
             type="password" 
-            placeholder="Password Segreta" 
+            placeholder="Password" 
             className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none focus:border-rose-300 transition-all" 
             onChange={(e) => setPassword(e.target.value)} 
             required 
