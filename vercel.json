@@ -1,11 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/admin",
-      "destination": "/404",
-      "permanent": false
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
