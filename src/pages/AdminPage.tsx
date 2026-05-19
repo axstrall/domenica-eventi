@@ -11,7 +11,7 @@ export function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
-  // --- STATI DI AUTENTICAZIONE SICURA CON SUPABASE ---
+  // --- AUTENTICAZIONE SICURA CON SUPABASE (F12 BLINDATO) ---
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,13 +42,10 @@ export function AdminPage() {
     setIsLoading(false);
   };
 
-  // Controlla automaticamente all'avvio se eri già dentro con una sessione valida
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setIsAuthenticated(true);
-      }
+      if (session) setIsAuthenticated(true);
     };
     checkUser();
   }, []);
@@ -86,7 +83,6 @@ export function AdminPage() {
   const handleDeleteSubscriber = async (id: string) => {
     if (window.confirm("Sei sicuro di voler eliminare questo contatto?")) {
       try {
-        // Chiamata all'API passando l'ID dell'elemento da eliminare
         const response = await fetch('/api/delete-subscriber', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -146,7 +142,6 @@ export function AdminPage() {
     window.location.reload();
   };
 
-  // --- INTERFACCIA DI LOGIN PROTETTA LATO SERVER ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50/50 p-6 font-sans">
@@ -155,13 +150,10 @@ export function AdminPage() {
           onSubmit={async (e) => { 
             e.preventDefault(); 
             setErrorMsg('');
-            
-            // Richiesta di verifica sicura inviata direttamente a Supabase
             const { data, error } = await supabase.auth.signInWithPassword({
               email: email,
               password: password,
             });
-
             if (error) {
               setErrorMsg("Accesso Negato! Credenziali errate.");
             } else if (data.user) {
@@ -171,9 +163,7 @@ export function AdminPage() {
           className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100"
         >
           <Lock className="mx-auto text-rose-300 mb-6" size={40} />
-          
           {errorMsg && <p className="text-red-500 text-xs mb-4 font-bold bg-red-50 p-2 rounded-xl">{errorMsg}</p>}
-
           <input 
             type="email" 
             placeholder="Email Amministratore" 
@@ -196,7 +186,6 @@ export function AdminPage() {
     );
   }
 
-  // --- INTERFACCIA DEL PANNELLO GESTIONALE DIETRO LOGIN ---
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto pt-24 space-y-12 pb-20 font-sans">
       <div className="flex justify-between items-center">
