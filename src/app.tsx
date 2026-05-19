@@ -23,8 +23,9 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
-          {/* AGGIUNTO: Percorso per la tua rubrica WhatsApp */}
-          <Route path="/@@@@@@@@" element={<AdminPage />} />
+          
+          {/* NUOVO PERCORSO PULITO: Protetto internamente da Supabase Auth */}
+          <Route path="/pannello" element={<AdminPage />} />
         </Routes>
       </div>
     </Router>
