@@ -4,24 +4,24 @@ import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Trash2, E
 import { Link } from 'react-router-dom';
 
 export function AdminPage() {
-  // --- SICUREZZA: RECUPERO PASSWORD DAL FILE .ENV ---
-  const PASSWORD_CORRETTA = import.meta.env.VITE_ADMIN_PASSWORD;
-
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+
+  // --- STATI DI AUTENTICAZIONE SICURA CON SUPABASE ---
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
+  // --- STATI GESTIONE MODULI ---
   const [searchQuery, setSearchQuery] = useState('');
   const [newBrandName, setNewBrandName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  
   const [editForm, setEditForm] = useState({ name: '', price: '', discount_price: '', brand_id: '' });
-
   const [newProduct, setNewProduct] = useState({
     name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '', discount_price: ''
   });
@@ -41,6 +41,17 @@ export function AdminPage() {
     } catch (err) { console.error("Errore caricamento dati"); }
     setIsLoading(false);
   };
+
+  // Controlla automaticamente all'avvio se eri già dentro con una sessione valida
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setIsAuthenticated(true);
+      }
+    };
+    checkUser();
+  }, []);
 
   useEffect(() => { 
     if (isAuthenticated) loadData(); 
@@ -75,10 +86,11 @@ export function AdminPage() {
   const handleDeleteSubscriber = async (id: string) => {
     if (window.confirm("Sei sicuro di voler eliminare questo contatto?")) {
       try {
+        // Chiamata all'API passando l'ID dell'elemento da eliminare
         const response = await fetch('/api/delete-subscriber', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, password }),
+          body: JSON.stringify({ id }),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Errore");
@@ -93,7 +105,6 @@ export function AdminPage() {
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
       const cleanDiscount = newProduct.discount_price ? parseFloat(newProduct.discount_price.toString().replace(',', '.')) : null;
-      
       const selectedBrand = brands.find(b => b.id === newProduct.brand_id);
       
       const { error } = await supabase.from('products').insert([{
@@ -129,30 +140,50 @@ export function AdminPage() {
     if (!error) { setEditingId(null); loadData(); }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    window.location.reload();
+  };
+
+  // --- INTERFACCIA DI LOGIN PROTETTA LATO SERVER ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50/50 p-6 font-sans">
         <h1 className="text-4xl font-serif text-rose-400 italic mb-8 uppercase text-center tracking-tighter">Domenica Admin</h1>
         <form 
-          onSubmit={(e) => { 
+          onSubmit={async (e) => { 
             e.preventDefault(); 
-            // CONTROLLO DI SICUREZZA BLOCCANTE
-            if (!PASSWORD_CORRETTA) {
-                alert("Errore critico: Password non configurata nel sistema. Controlla il file .env");
-                return;
-            }
-            if (password === PASSWORD_CORRETTA) {
+            setErrorMsg('');
+            
+            // Richiesta di verifica sicura inviata direttamente a Supabase
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: email,
+              password: password,
+            });
+
+            if (error) {
+              setErrorMsg("Accesso Negato! Credenziali errate.");
+            } else if (data.user) {
               setIsAuthenticated(true); 
-            } else {
-              alert("Accesso Negato! Password non corretta.");
             }
           }} 
           className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100"
         >
           <Lock className="mx-auto text-rose-300 mb-6" size={40} />
+          
+          {errorMsg && <p className="text-red-500 text-xs mb-4 font-bold bg-red-50 p-2 rounded-xl">{errorMsg}</p>}
+
+          <input 
+            type="email" 
+            placeholder="Email Amministratore" 
+            className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none focus:border-rose-300 transition-all" 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+          />
           <input 
             type="password" 
-            placeholder="Password Amministratore" 
+            placeholder="Password Segreta" 
             className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none focus:border-rose-300 transition-all" 
             onChange={(e) => setPassword(e.target.value)} 
             required 
@@ -165,13 +196,14 @@ export function AdminPage() {
     );
   }
 
+  // --- INTERFACCIA DEL PANNELLO GESTIONALE DIETRO LOGIN ---
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto pt-24 space-y-12 pb-20 font-sans">
       <div className="flex justify-between items-center">
         <Link to="/" className="text-rose-400 font-bold italic flex items-center gap-2 hover:underline">
           <ArrowLeft size={18} /> Torna al Sito
         </Link>
-        <button onClick={() => window.location.reload()} className="text-xs text-gray-400 uppercase tracking-widest font-bold">Esci</button>
+        <button onClick={handleLogout} className="text-xs text-gray-400 uppercase tracking-widest font-bold hover:text-rose-500 transition-colors">Esci</button>
       </div>
 
       {/* SEZIONE MARCHI */}
