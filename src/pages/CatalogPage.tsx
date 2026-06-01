@@ -16,7 +16,7 @@ export function CatalogPage() {
   // Marchi trattati
   const brands = [
     'Hervit', 'Blanc Mariclò', 'Enzo de Gasperi', 
-    'Mathilde M', 'BRANDANI', 'Nuvole di Stoffa', 'Chez Moi Italia'
+    'Mathilde M', 'BRANDANI', 'Nuvole di Stoffa', 'Chez Moi Italia', 'EVENTI'
   ];
 
   // Leggiamo categoria, marchio e RICERCA dall'URL
