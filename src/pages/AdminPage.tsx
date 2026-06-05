@@ -22,7 +22,7 @@ export function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [newBrandName, setNewBrandName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', price: '', discount_price: '', brand_id: '' });
+  const [editForm, setEditForm] = useState({ name: '', price: '', discount_price: '', brand_id: '', category_id: '' });
   const [newProduct, setNewProduct] = useState({
     name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '', discount_price: ''
   });
@@ -124,7 +124,8 @@ export function AdminPage() {
       name: editForm.name,
       price: isNaN(cleanPrice) ? 0 : cleanPrice,
       discount_price: cleanDiscount,
-      brand_id: editForm.brand_id || null
+      brand_id: editForm.brand_id || null,
+      category_id: editForm.category_id || null
     }).eq('id', id);
     if (!error) { setEditingId(null); loadData(); }
   };
@@ -242,14 +243,24 @@ export function AdminPage() {
                 <div className="relative">
                   <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-white shadow-md" alt={p.name} />
                   {p.discount_price && <div className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><Percent size={12}/></div>}
-                </div>
                 {editingId === p.id ? (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 w-full">
                     <input className="border px-4 py-1 rounded-xl text-sm outline-none focus:border-blue-300" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <input placeholder="Pieno" className="border px-4 py-1 rounded-xl text-sm w-20 outline-none focus:border-blue-300" value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
                       <input placeholder="Sconto" className="border px-4 py-1 rounded-xl text-sm w-20 bg-red-50 border-red-200 outline-none focus:border-red-300" value={editForm.discount_price} onChange={e => setEditForm({...editForm, discount_price: e.target.value})} />
+                      
+                      <select className="border px-2 py-1 rounded-xl text-xs outline-none bg-white focus:border-blue-300" value={editForm.brand_id} onChange={e => setEditForm({...editForm, brand_id: e.target.value})}>
+                        <option value="">No Marca</option>
+                        {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+
+                      <select className="border px-2 py-1 rounded-xl text-xs outline-none bg-white focus:border-blue-300" value={editForm.category_id} onChange={e => setEditForm({...editForm, category_id: e.target.value})}>
+                        <option value="">No Categoria</option>
+                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
                     </div>
+                  </div>
                   </div>
                 ) : (
                   <div>
@@ -270,9 +281,7 @@ export function AdminPage() {
                   <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
                 </button>
                 {editingId === p.id ? (
-                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full shadow-md hover:bg-green-600"><Check size={20}/></button>
-                ) : (
-                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), discount_price: p.discount_price?.toString() || '', brand_id: p.brand_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm hover:bg-blue-50 transition-all"><Edit2 size={20}/></button>
+                  <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), discount_price: p.discount_price?.toString() || '', brand_id: p.brand_id || '', category_id: p.category_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm hover:bg-blue-50 transition-all"><Edit2 size={20}/></button>
                 )}
                 <button onClick={async () => { if(confirm("Eliminare definitivamente?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-3 rounded-full border border-rose-50 shadow-sm hover:bg-rose-50 transition-all"><Trash2 size={20}/></button>
               </div>
