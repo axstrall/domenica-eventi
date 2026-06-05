@@ -1,5 +1,5 @@
-import { useState } from 'react'; // Aggiunto per gestire l'apertura dello zoom
-import { MessageCircle, ZoomIn, X } from 'lucide-react';
+import { useState } from 'react';
+import { MessageCircle, ZoomIn, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Product } from '../lib/database.types';
 
 interface ProductCardProps {
@@ -7,20 +7,50 @@ interface ProductCardProps {
   onRequestQuote: (product: Product) => void;
 }
 
+// Funzione per tradurre l'immagine (capisce se è un link singolo o una galleria JSON)
+const parseImages = (urlData: any): string[] => {
+  if (!urlData) return [];
+  try {
+    const parsed = JSON.parse(urlData);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (e) {
+    return [urlData];
+  }
+  return [urlData];
+};
+
 export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
-  const [isZoomOpen, setIsZoomOpen] = useState(false); // Stato per lo zoom
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0); // Stato per scorrere le foto
+  
   const hasDiscount = product.discount_price !== null && product.discount_price > 0;
+  
+  // Otteniamo la lista di tutte le immagini
+  const images = parseImages(product.image_url);
+  const currentImage = images[currentIndex] || '';
+  const hasMultipleImages = images.length > 1;
+
+  // Funzioni per andare avanti e indietro
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evita di aprire lo zoom quando si clicca la freccia
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evita di aprire lo zoom quando si clicca la freccia
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
 
   return (
     <>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
-        {/* AREA IMMAGINE CON ZOOM */}
+        {/* AREA IMMAGINE CON ZOOM E SLIDER */}
         <div 
           className="relative overflow-hidden aspect-square cursor-zoom-in"
           onClick={() => setIsZoomOpen(true)}
         >
           <img
-            src={product.image_url}
+            src={currentImage}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
@@ -31,6 +61,30 @@ export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
               <ZoomIn className="text-rose-400" size={24} />
             </div>
           </div>
+
+          {/* Freccette di navigazione (mostrate solo se ci sono più foto) */}
+          {hasMultipleImages && (
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between px-2">
+              <button onClick={prevImage} className="bg-white/90 p-1.5 rounded-full text-gray-800 hover:bg-rose-50 hover:text-rose-400 shadow-md transition-colors">
+                <ChevronLeft size={20} />
+              </button>
+              <button onClick={nextImage} className="bg-white/90 p-1.5 rounded-full text-gray-800 hover:bg-rose-50 hover:text-rose-400 shadow-md transition-colors">
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+
+          {/* Pallini indicatori in basso */}
+          {hasMultipleImages && (
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+              {images.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={`w-1.5 h-1.5 rounded-full shadow-sm transition-colors ${idx === currentIndex ? 'bg-white' : 'bg-white/50'}`} 
+                />
+              ))}
+            </div>
+          )}
 
           {/* Etichetta Sconto */}
           {hasDiscount && (
@@ -93,7 +147,7 @@ export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
         </div>
       </div>
 
-      {/* MODALE PER LO ZOOM (LIGHTBOX) */}
+      {/* MODALE PER LO ZOOM (LIGHTBOX) AGGIORNATA */}
       {isZoomOpen && (
         <div 
           className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-300"
@@ -106,12 +160,42 @@ export function ProductCard({ product, onRequestQuote }: ProductCardProps) {
             <X size={40} />
           </button>
           
+          {/* Frecce nella modale di Zoom */}
+          {hasMultipleImages && (
+            <>
+              <button 
+                onClick={(e) => { e.stopPropagation(); prevImage(e); }} 
+                className="absolute left-4 md:left-10 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors z-[1000]"
+              >
+                <ChevronLeft size={32} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); nextImage(e); }} 
+                className="absolute right-4 md:right-10 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors z-[1000]"
+              >
+                <ChevronRight size={32} />
+              </button>
+            </>
+          )}
+
           <img 
-            src={product.image_url} 
+            src={currentImage} 
             alt={product.name} 
             className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain animate-in zoom-in duration-300"
             onClick={(e) => e.stopPropagation()} // Impedisce la chiusura se clicchi sull'immagine stessa
           />
+
+          {/* Pallini indicatori nella modale di Zoom */}
+          {hasMultipleImages && (
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-[1000]">
+              {images.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={`w-2 h-2 rounded-full transition-colors ${idx === currentIndex ? 'bg-white' : 'bg-white/30'}`} 
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </>
