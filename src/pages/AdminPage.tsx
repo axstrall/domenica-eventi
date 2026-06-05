@@ -1,10 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Trash2, Edit2, Check, X, Star, Search, Tag, Percent } from 'lucide-react';
+import { MessageCircle, ArrowLeft, Lock, PlusCircle, Database, Upload, Trash2, Edit2, Check, X, Star, Search, Tag, Percent, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+// --- HELPER PER LE IMMAGINI MULTIPLE ---
+// Questa funzione capisce se l'immagine è una sola (vecchio metodo) o una galleria (nuovo metodo)
+export const parseImages = (urlData: any): string[] => {
+  if (!urlData) return [];
+  try {
+    const parsed = JSON.parse(urlData);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (e) {
+    // Se fallisce, significa che è il vecchio link singolo
+    return [urlData];
+  }
+  return [urlData];
+};
+
+// --- COMPONENTE SLIDER IMMAGINI (Puoi usarlo anche nel sito pubblico!) ---
+const ImageGallery = ({ urlData, discount }: { urlData: string, discount?: number | null }) => {
+  const urls = parseImages(urlData);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (urls.length === 0) return <div className="w-20 h-20 bg-gray-200 rounded-2xl shrink-0"></div>;
+  
+  const nextImg = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex((prev) => (prev + 1) % urls.length); };
+  const prevImg = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex((prev) => (prev === 0 ? urls.length - 1 : prev - 1)); };
+
+  return (
+    <div className="relative w-20 h-20 shrink-0 group rounded-2xl overflow-hidden shadow-md border border-white">
+      <img src={urls[currentIndex]} className="w-full h-full object-cover transition-all duration-300" alt="Prodotto" />
+      
+      {discount && <div className="absolute top-0 left-0 bg-red-500 text-white rounded-br-lg p-1 shadow-lg z-10"><Percent size={10}/></div>}
+
+      {/* Freccette (appaiono solo se ci sono più foto e ci passi sopra col mouse) */}
+      {urls.length > 1 && (
+        <>
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between px-0.5">
+            <button onClick={prevImg} className="bg-white/90 p-0.5 rounded-full text-black hover:bg-white shadow"><ChevronLeft size={14}/></button>
+            <button onClick={nextImg} className="bg-white/90 p-0.5 rounded-full text-black hover:bg-white shadow"><ChevronRight size={14}/></button>
+          </div>
+          {/* Pallini indicatori */}
+          <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5">
+            {urls.map((_, i) => (
+              <div key={i} className={`w-1 h-1 rounded-full ${i === currentIndex ? 'bg-white' : 'bg-white/50'}`} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 export function AdminPage() {
-  // --- RECUPERO PASSWORD ORIGINALE DAL FILE .ENV ---
   const PASSWORD_CORRETTA = import.meta.env.VITE_ADMIN_PASSWORD;
 
   const [subscribers, setSubscribers] = useState<any[]>([]);
@@ -14,17 +62,17 @@ export function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
-  // --- TORNATI AL VECCHIO STATO SOLO PASSWORD ---
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // --- STATI GESTIONE MODULI ---
   const [searchQuery, setSearchQuery] = useState('');
   const [newBrandName, setNewBrandName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', price: '', discount_price: '', brand_id: '', category_id: '' });
+  
+  // MODIFICA: Ora usiamo un array "image_urls" per raccogliere più foto
   const [newProduct, setNewProduct] = useState({
-    name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '', discount_price: ''
+    name: '', description: '', category_id: '', image_urls: [] as string[], is_featured: false, brand_id: '', price: '', discount_price: ''
   });
 
   const loadData = async () => {
@@ -51,16 +99,31 @@ export function AdminPage() {
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // MODIFICA: Gestione di file multipli
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     setIsUploading(true);
     try {
-      const fileName = `${Date.now()}-${file.name}`;
-      await supabase.storage.from('product-images').upload(fileName, file);
-      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
-      setNewProduct({ ...newProduct, image_url: publicUrl });
+      const uploadedUrls: string[] = [];
+      // Carichiamo tutte le foto selezionate una per una
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+        await supabase.storage.from('product-images').upload(fileName, file);
+        const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
+        uploadedUrls.push(publicUrl);
+      }
+      // Aggiungiamo le nuove foto all'array esistente
+      setNewProduct(prev => ({ ...prev, image_urls: [...prev.image_urls, ...uploadedUrls] }));
     } catch (err) { alert("Errore caricamento foto"); } finally { setIsUploading(false); }
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setNewProduct(prev => ({
+      ...prev,
+      image_urls: prev.image_urls.filter((_, index) => index !== indexToRemove)
+    }));
   };
 
   const handleDeleteBrand = async (brandId: string) => {
@@ -91,23 +154,32 @@ export function AdminPage() {
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newProduct.image_urls.length === 0) {
+      alert("Devi caricare almeno una foto!");
+      return;
+    }
+
     try {
       const cleanPrice = parseFloat(newProduct.price.toString().replace(',', '.'));
       const cleanDiscount = newProduct.discount_price ? parseFloat(newProduct.discount_price.toString().replace(',', '.')) : null;
       const selectedBrand = brands.find(b => b.id === newProduct.brand_id);
       
+      const { image_urls, ...productDataToSend } = newProduct;
+
       const { error } = await supabase.from('products').insert([{
-        ...newProduct, 
+        ...productDataToSend,
         brand: selectedBrand ? selectedBrand.name : null,
         price: isNaN(cleanPrice) ? 0 : cleanPrice,
         discount_price: cleanDiscount,
+        // Salviamo l'array delle foto come stringa JSON! (Il nostro trucco)
+        image_url: JSON.stringify(image_urls), 
         slug: newProduct.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 1000)
       }]);
       
       if (error) throw error;
-      alert("Prodotto Caricato!");
+      alert("Prodotto Caricato con Galleria!");
       loadData();
-      setNewProduct({ name: '', description: '', category_id: '', image_url: '', is_featured: false, brand_id: '', price: '', discount_price: '' });
+      setNewProduct({ name: '', description: '', category_id: '', image_urls: [], is_featured: false, brand_id: '', price: '', discount_price: '' });
     } catch (err: any) { alert(err.message); }
   };
 
@@ -130,44 +202,19 @@ export function AdminPage() {
     if (!error) { setEditingId(null); loadData(); }
   };
 
-  // --- MODULO DI ACCESSO ORIGINALE CON SOLA PASSWORD ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50/50 p-6 font-sans">
         <h1 className="text-4xl font-serif text-rose-400 italic mb-8 uppercase text-center tracking-tighter">Domenica Admin</h1>
-        <form 
-          onSubmit={(e) => { 
-            e.preventDefault(); 
-            if (!PASSWORD_CORRETTA) {
-              alert("Errore critico: Password non configurata nel sistema. Controlla il file .env");
-              return;
-            }
-            if (password === PASSWORD_CORRETTA) {
-              setIsAuthenticated(true); 
-            } else {
-              alert("Accesso Negato! Password non corretta.");
-            }
-          }} 
-          className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100"
-        >
+        <form onSubmit={(e) => { e.preventDefault(); if (!PASSWORD_CORRETTA) { alert("Errore file .env"); return; } if (password === PASSWORD_CORRETTA) { setIsAuthenticated(true); } else { alert("Accesso Negato!"); } }} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-rose-100">
           <Lock className="mx-auto text-rose-300 mb-6" size={40} />
-          
-          <input 
-            type="password" 
-            placeholder="Password" 
-            className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none focus:border-rose-300 transition-all" 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
-          />
-          <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">
-            Entra nel Pannello
-          </button>
+          <input type="password" placeholder="Password" className="w-full p-4 rounded-2xl bg-rose-50 mb-4 text-center border border-rose-100 outline-none focus:border-rose-300 transition-all" onChange={(e) => setPassword(e.target.value)} required />
+          <button className="w-full bg-rose-400 text-white p-4 rounded-2xl font-bold uppercase shadow-lg hover:bg-rose-500 transition-all">Entra nel Pannello</button>
         </form>
       </div>
     );
   }
 
-  // --- INTERFACCIA DEL PANNELLO GESTIONALE DIETRO LOGIN ---
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto pt-24 space-y-12 pb-20 font-sans">
       <div className="flex justify-between items-center">
@@ -177,7 +224,6 @@ export function AdminPage() {
         <button onClick={() => window.location.reload()} className="text-xs text-gray-400 uppercase tracking-widest font-bold hover:text-rose-500 transition-colors">Esci</button>
       </div>
 
-      {/* SEZIONE MARCHI */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight"><Tag className="text-rose-400"/> Marchi</h2>
         <form onSubmit={async (e) => { e.preventDefault(); await supabase.from('brands').insert([{ name: newBrandName }]); setNewBrandName(''); loadData(); }} className="flex gap-4 mb-6">
@@ -194,16 +240,37 @@ export function AdminPage() {
         </div>
       </section>
 
-      {/* PUBBLICA NUOVO ARTICOLO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-8 text-gray-800 tracking-tight">Pubblica Nuovo Articolo</h2>
         <form onSubmit={handleAddProduct} className="grid gap-6">
-          <label className="border-2 border-dashed border-rose-200 h-48 rounded-[2.5rem] flex items-center justify-center cursor-pointer bg-rose-50/20 overflow-hidden shadow-inner hover:bg-rose-50/40 transition-all">
-            {newProduct.image_url ? <img src={newProduct.image_url} className="w-full h-full object-cover" alt="Anteprima" /> : 
-              <div className="text-rose-400 flex flex-col items-center gap-2"><Upload size={32} /><span className="font-bold text-xs uppercase tracking-widest">Carica Immagine</span></div>
-            }
-            <input type="file" className="hidden" onChange={handleImageUpload} />
+          
+          {/* AREA CARICAMENTO FILE MULTIPLI */}
+          <label className="border-2 border-dashed border-rose-200 min-h-[12rem] p-6 rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer bg-rose-50/20 shadow-inner hover:bg-rose-50/40 transition-all relative">
+            {isUploading && <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-20 rounded-[2.5rem]"><span className="font-bold text-rose-500">Caricamento in corso...</span></div>}
+            
+            <div className="text-rose-400 flex flex-col items-center gap-2 mb-4">
+              <Upload size={32} />
+              <span className="font-bold text-xs uppercase tracking-widest text-center">Carica Immagini<br/><span className="text-[10px] text-gray-400">(Seleziona più foto insieme o una alla volta)</span></span>
+            </div>
+            
+            {newProduct.image_urls.length > 0 && (
+              <div className="flex flex-wrap gap-3 justify-center w-full mt-2">
+                {newProduct.image_urls.map((url, idx) => (
+                  <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden shadow-md group border border-white">
+                    <img src={url} className="w-full h-full object-cover" alt={`Preview ${idx}`} />
+                    <button type="button" onClick={(e) => { e.preventDefault(); removeImage(idx); }} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
+                      <X size={12} />
+                    </button>
+                    {idx === 0 && <span className="absolute bottom-0 left-0 right-0 bg-rose-500 text-white text-[9px] text-center font-bold uppercase py-0.5">Copertina</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* NOTA IL "multiple" QUI SOTTO */}
+            <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
           </label>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <input type="text" placeholder="Nome Articolo" className="border p-4 rounded-2xl outline-none shadow-sm focus:border-rose-300" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} required />
             <input type="text" placeholder="Prezzo Pieno (€)" className="border p-4 rounded-2xl outline-none shadow-sm focus:border-rose-300" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} required />
@@ -226,7 +293,6 @@ export function AdminPage() {
         </form>
       </section>
 
-      {/* CATALOGO */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <h2 className="text-2xl font-serif italic text-gray-800 tracking-tight">Catalogo ({filteredProducts.length})</h2>
@@ -239,11 +305,10 @@ export function AdminPage() {
         <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           {filteredProducts.map(p => (
             <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/30 transition-all shadow-sm">
-              <div className="flex items-center gap-5">
-                <div className="relative shrink-0">
-                  <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-white shadow-md" alt={p.name} />
-                  {p.discount_price && <div className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><Percent size={12}/></div>}
-                </div>
+              <div className="flex items-center gap-5 w-full">
+                
+                {/* QUI USIAMO IL NUOVO COMPONENTE SLIDER */}
+                <ImageGallery urlData={p.image_url} discount={p.discount_price} />
                 
                 {editingId === p.id ? (
                   <div className="flex flex-col gap-2 w-full">
@@ -296,7 +361,6 @@ export function AdminPage() {
         </div>
       </section>
 
-      {/* RUBRICA */}
       <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-100">
         <h2 className="text-2xl font-serif italic mb-6 flex items-center gap-2 text-gray-800 tracking-tight"><Database className="text-rose-400"/> Rubrica ({subscribers.length})</h2>
         <div className="space-y-3">
