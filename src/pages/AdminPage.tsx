@@ -279,7 +279,9 @@ export function AdminPage() {
                 <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-3 rounded-full transition-all ${p.is_featured ? 'text-yellow-500 bg-yellow-50 shadow-inner' : 'text-gray-300 bg-white shadow-sm'}`}>
                   <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
                 </button>
-                {editingId === p.id ? (
+              {editingId === p.id ? (
+                  <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full shadow-md hover:bg-green-600"><Check size={20}/></button>
+                ) : (
                   <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), discount_price: p.discount_price?.toString() || '', brand_id: p.brand_id || '', category_id: p.category_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm hover:bg-blue-50 transition-all"><Edit2 size={20}/></button>
                 )}
                 <button onClick={async () => { if(confirm("Eliminare definitivamente?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-3 rounded-full border border-rose-50 shadow-sm hover:bg-rose-50 transition-all"><Trash2 size={20}/></button>
