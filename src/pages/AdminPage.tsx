@@ -79,7 +79,7 @@ export function AdminPage() {
         const response = await fetch('/api/delete-subscriber', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, password }), // Rimesso password qui per l'API di eliminazione
+          body: JSON.stringify({ id, password }), 
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Errore");
@@ -240,9 +240,11 @@ export function AdminPage() {
           {filteredProducts.map(p => (
             <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-[2rem] border border-gray-100 hover:bg-rose-50/30 transition-all shadow-sm">
               <div className="flex items-center gap-5">
-                <div className="relative">
+                <div className="relative shrink-0">
                   <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-white shadow-md" alt={p.name} />
                   {p.discount_price && <div className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><Percent size={12}/></div>}
+                </div>
+                
                 {editingId === p.id ? (
                   <div className="flex flex-col gap-2 w-full">
                     <input className="border px-4 py-1 rounded-xl text-sm outline-none focus:border-blue-300" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
@@ -275,15 +277,18 @@ export function AdminPage() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              
+              <div className="flex items-center gap-2 shrink-0">
                 <button onClick={() => toggleFeatured(p.id, p.is_featured)} className={`p-3 rounded-full transition-all ${p.is_featured ? 'text-yellow-500 bg-yellow-50 shadow-inner' : 'text-gray-300 bg-white shadow-sm'}`}>
                   <Star size={20} fill={p.is_featured ? "currentColor" : "none"} />
                 </button>
-              {editingId === p.id ? (
+                
+                {editingId === p.id ? (
                   <button onClick={() => saveEdit(p.id)} className="bg-green-500 text-white p-3 rounded-full shadow-md hover:bg-green-600"><Check size={20}/></button>
                 ) : (
                   <button onClick={() => { setEditingId(p.id); setEditForm({name: p.name, price: p.price.toString(), discount_price: p.discount_price?.toString() || '', brand_id: p.brand_id || '', category_id: p.category_id || ''}); }} className="bg-white text-blue-400 p-3 rounded-full border border-blue-50 shadow-sm hover:bg-blue-50 transition-all"><Edit2 size={20}/></button>
                 )}
+                
                 <button onClick={async () => { if(confirm("Eliminare definitivamente?")) { await supabase.from('products').delete().eq('id', p.id); loadData(); } }} className="bg-white text-rose-400 p-3 rounded-full border border-rose-50 shadow-sm hover:bg-rose-50 transition-all"><Trash2 size={20}/></button>
               </div>
             </div>
