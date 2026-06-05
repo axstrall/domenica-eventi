@@ -261,7 +261,6 @@ export function AdminPage() {
                       </select>
                     </div>
                   </div>
-                  </div>
                 ) : (
                   <div>
                     <p className="font-bold text-gray-800 leading-tight">{p.name}</p>
