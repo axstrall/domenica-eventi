@@ -161,7 +161,7 @@ export function HomePage() {
                 className="group relative h-96 overflow-hidden rounded-2xl shadow-md transition-all duration-500 hover:-translate-y-3 block border-2 border-orange-100"
               >
                 <img 
-                  src="/images/autunno.jpg" 
+                  src="/images/autunno.jpeg" 
                   alt="Collezione Autunno"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
@@ -195,8 +195,8 @@ export function HomePage() {
                 </div>
               </Link>
 
-              {/* 4. ALTRE CATEGORIE DINAMICHE */}
-              {categories.slice(0, 3).map((category) => (
+              {/* 4. ALTRE CATEGORIE DINAMICHE (Filtriamo via autunno e natale per non avere doppioni) */}
+              {categories.filter(c => c.slug !== 'autunno' && c.slug !== 'natale').slice(0, 3).map((category) => (
                 <Link 
                   key={category.id}
                   to={`/catalog?category=${category.slug}`}
