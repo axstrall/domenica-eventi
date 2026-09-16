@@ -131,7 +131,8 @@ export function HomePage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* NUOVO RIQUADRO SCONTI */}
+              
+              {/* 1. SCONTI */}
               <Link 
                 to="/catalog?category=sconti"
                 className="group relative h-96 overflow-hidden rounded-2xl bg-rose-50 shadow-md transition-all duration-500 hover:-translate-y-3 block border-2 border-rose-200"
@@ -140,7 +141,7 @@ export function HomePage() {
                   <Percent size={16} /> SPECIAL OFFERS
                 </div>
                 <img 
-                  src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80" 
+                  src="/images/sconti.jpg" 
                   alt="Sconti e Offerte"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90"
                 />
@@ -154,8 +155,48 @@ export function HomePage() {
                 </div>
               </Link>
 
-              {/* ALTRE CATEGORIE DINAMICHE */}
-              {categories.slice(0, 2).map((category) => (
+              {/* 2. AUTUNNO */}
+              <Link 
+                to="/catalog?category=autunno"
+                className="group relative h-96 overflow-hidden rounded-2xl shadow-md transition-all duration-500 hover:-translate-y-3 block border-2 border-orange-100"
+              >
+                <img 
+                  src="/images/autunno.jpg" 
+                  alt="Collezione Autunno"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-orange-900/90 via-orange-900/20 to-transparent flex items-end p-8">
+                  <div>
+                    <h3 className="text-white text-3xl font-serif mb-2">Atmosfera Autunnale</h3>
+                    <p className="text-orange-200 text-sm flex items-center">
+                      Colori caldi per la tua casa <ArrowRight size={16} className="ml-2" />
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              {/* 3. NATALE */}
+              <Link 
+                to="/catalog?category=natale"
+                className="group relative h-96 overflow-hidden rounded-2xl shadow-md transition-all duration-500 hover:-translate-y-3 block border-2 border-red-100"
+              >
+                <img 
+                  src="/images/natale.jpg" 
+                  alt="Collezione Natale"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-red-900/90 via-red-900/20 to-transparent flex items-end p-8">
+                  <div>
+                    <h3 className="text-white text-3xl font-serif mb-2">Magia del Natale</h3>
+                    <p className="text-red-200 text-sm flex items-center">
+                      Preparati per le feste <ArrowRight size={16} className="ml-2" />
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              {/* 4. ALTRE CATEGORIE DINAMICHE */}
+              {categories.slice(0, 3).map((category) => (
                 <Link 
                   key={category.id}
                   to={`/catalog?category=${category.slug}`}
@@ -170,7 +211,7 @@ export function HomePage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-8">
                     <div>
                       <h3 className="text-white text-2xl font-serif mb-2">{category.name}</h3>
-                      <p className="text-rose-200 text-sm flex items-center">
+                      <p className="text-gray-200 text-sm flex items-center">
                         Scopri la collezione <ArrowRight size={16} className="ml-2" />
                       </p>
                     </div>
