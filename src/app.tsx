@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { HomePage } from './pages/HomePage';
 import { CatalogPage } from './pages/CatalogPage';
 import { AdminPage } from './pages/AdminPage'; 
@@ -27,6 +28,7 @@ function App() {
           {/* NUOVO PERCORSO PULITO: Protetto internamente da Supabase Auth */}
           <Route path="/pannello" element={<AdminPage />} />
         </Routes>
+        <Analytics />
       </div>
     </Router>
   );
